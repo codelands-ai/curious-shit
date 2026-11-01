@@ -27,6 +27,9 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-01 | OCR with native Tesseract installed locally, not tesseract.js | Faster and more accurate, which serves the 90% search target |
 | 2026-11-01 | The build runs on the owner's machine, not in CI | Keeps "one command, live in 5 minutes" simple; CI can come later |
 | 2026-11-01 | Added a seventh reaction: `shit` 💩 | Owner request, before phase 0 merged; it fits the site's name |
+| 2026-11-01 | Ingest writes a slim `feed.json` for the gallery; the full `index.json` with OCR text loads only for search | About 5 MB of OCR text at 1,000 posters would blow the 2.5s LCP target |
+| 2026-11-01 | Feed load failure shows "The gallery is closed for a moment. Shit happens." | Owner's wording; the specs had no error state for the feed |
+| 2026-11-01 | Fonts stay on Google Fonts until phase 7 | They don't block the first poster; self-hosting can wait |
 | 2026-11-01 | `.claude/PRD.md` is the only PRD; the claude.ai shared copy is dropped and no longer maintained | The repo file is versioned and read by every session; one copy can't drift |
 
 ## Plan
@@ -39,7 +42,7 @@ Each phase ends with something that can be seen or tested. Phases and steps are 
 | --- | --- | --- | --- |
 | 0 | Project setup | done | Folder layout and toolchain ready, dev server running |
 | 1 | Ingest pipeline | done | One command turns `posters/` into WebP variants, a manifest and a search index |
-| 2 | Static gallery | proposed | Infinite scroll of posters styled to the design standard, running locally |
+| 2 | Static gallery | in progress | Infinite scroll of posters styled to the design standard, running locally |
 | 3 | Search | proposed | Pinned search bar filtering the feed by filename and OCR text |
 | 4 | First deploy | proposed | Gallery and search live on Cloudflare Pages |
 | 5 | Sign-in | proposed | Firebase Auth with Google and email magic link |
@@ -98,6 +101,21 @@ curious-shit/
 **Done when:** on the three sample posters, `npm run ingest` produces the manifest, the WebP files and an index with OCR text; a second run changes nothing; renaming a poster keeps its ID.
 
 **Verified 2026-11-01:** first run 2.4s with OCR on all three; second run changes no files; rename keeps the ID and updates the title; removal retires the entry and deletes its images; putting the file back restores the original manifest and index exactly; a correction file overrides OCR; a square image fails the run with the manifest untouched.
+
+### Phase 2: Static gallery (confirmed 2026-11-01)
+
+| # | Step | Detail | Status |
+| --- | --- | --- | --- |
+| 2.1 | Slim feed file | Ingest also writes `public/generated/feed.json`: `id`, `title`, `src`, `width`, `height`, `added_at`, newest first. OCR text stays in `index.json`, loaded only by search (phase 3). | confirmed |
+| 2.2 | Page shell | 64px glass search-bar strip pinned to the top with the wordmark at the left gutter; feed below with the standard spacing. Room is left for the search input (phase 3) and `auth_control` (phase 5). | confirmed |
+| 2.3 | Poster card | `<figure>` with the image and placard title. `srcset` from `src`, `sizes` matching the layout, `width`/`height` set, alt = title. `--plinth` placeholder at the exact aspect ratio, poster shadow, picture light. | confirmed |
+| 2.4 | Batching | Render 8 cards at a time; when the bottom comes within about one screen, add the next 8. The brass loading dot sits at the bottom. First card eager with high fetch priority, the rest lazy. | confirmed |
+| 2.5 | Looping | After the last poster the feed starts again from the newest. Repeats are new elements and get the entrance animation. | confirmed |
+| 2.6 | Motion | Entrance at 15% visible (image fades and rises; picture light fades up 100ms later); first poster skips it; picture light brightens on hover; reduced motion means opacity only. | confirmed |
+| 2.7 | Error state | If `feed.json` fails to load, show "The gallery is closed for a moment. Shit happens." in the feed status style. | confirmed |
+| 2.8 | Responsive check | Gutters, gaps and title size at 375, 800 and 1440px. | confirmed |
+
+**Done when:** with the three sample posters, the page scrolls endlessly with no layout shift, the first poster appears without animation, and nothing moves under reduced motion.
 
 ## Environment
 
