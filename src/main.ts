@@ -1,3 +1,4 @@
+import { startAccount } from "./account.ts";
 import { Gallery, LINES, loadFeed } from "./gallery.ts";
 import { hasInitialQuery, startSearch } from "./search.ts";
 
@@ -26,3 +27,5 @@ startSearch(gallery, feedReady, {
   resultStatus: $("result-status"),
   hallway: $("hallway"),
 });
+
+startAccount();

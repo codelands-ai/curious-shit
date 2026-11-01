@@ -1,0 +1,317 @@
+/* auth_control, account menu and sign-in dialog. Design standard sections 1–5. */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+a {
+  color: var(--brass);
+  text-underline-offset: 0.2em;
+}
+
+/* ---------- auth_control ---------- */
+
+.strip__end {
+  position: relative;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+}
+
+.auth-button,
+.account__avatar {
+  position: relative;
+  height: calc(var(--space-8) + var(--space-2));
+  background: var(--plinth);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-fixture);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease-settle),
+    color var(--dur-fast) var(--ease-settle);
+}
+
+/* 40px fixtures get a 44px touch target. */
+.auth-button::before,
+.account__avatar::before {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--space-1) / 2);
+}
+
+.auth-button {
+  padding: 0 var(--space-4);
+  font: 500 var(--fs-small) / 1.4 var(--font-ui);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+.account__avatar {
+  width: calc(var(--space-8) + var(--space-2));
+  padding: 0;
+  font: 500 var(--fs-placard) / 1 var(--font-placard);
+  color: var(--text-primary);
+}
+
+@media (hover: hover) {
+  .auth-button:hover,
+  .account__avatar:hover {
+    background: var(--plinth-raised);
+    color: var(--text-primary);
+  }
+}
+
+.account__menu {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  min-width: calc(var(--space-32) + var(--space-24));
+  max-width: calc(100vw - 2 * var(--gutter));
+  padding: var(--space-2) 0;
+  background: var(--plinth);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-fixture);
+}
+
+.account__menu[hidden] {
+  display: none;
+}
+
+.account__who {
+  margin: 0;
+  padding: var(--space-2) var(--space-4) var(--space-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-small);
+  line-height: 1.4;
+  color: var(--text-faint);
+  border-bottom: 1px solid var(--rule);
+}
+
+.account__item {
+  display: block;
+  width: 100%;
+  height: calc(var(--space-8) + var(--space-3));
+  margin-top: var(--space-2);
+  padding: 0 var(--space-4);
+  text-align: left;
+  background: none;
+  border: 0;
+  font: 400 var(--fs-body) / 1.6 var(--font-ui);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-settle);
+}
+
+@media (hover: hover) {
+  .account__item:hover {
+    background: var(--plinth-raised);
+  }
+}
+
+/* ---------- Sign-in dialog ---------- */
+
+.signin {
+  width: min(400px, calc(100vw - 2 * var(--gutter)));
+  max-width: none;
+  padding: var(--space-6);
+  background: var(--plinth);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-fixture);
+  color: var(--text-primary);
+  opacity: 0;
+  transform: translateY(var(--space-2));
+  transition:
+    opacity var(--dur-exit) var(--ease-exit),
+    transform var(--dur-exit) var(--ease-exit);
+}
+
+@media (min-width: 768px) {
+  .signin {
+    padding: var(--space-8);
+  }
+}
+
+.signin[open] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.signin.is-open {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--dur-base) var(--ease-settle),
+    transform var(--dur-base) var(--ease-settle);
+}
+
+.signin::backdrop {
+  background: rgba(11, 10, 9, 0.7);
+  opacity: 0;
+  transition: opacity var(--dur-exit) var(--ease-exit);
+}
+
+.signin.is-open::backdrop {
+  opacity: 1;
+  transition: opacity var(--dur-base) var(--ease-settle);
+}
+
+.signin__close {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  display: grid;
+  place-items: center;
+  width: calc(var(--space-8) + var(--space-3));
+  height: calc(var(--space-8) + var(--space-3));
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-fixture);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .signin__close:hover {
+    color: var(--text-primary);
+  }
+}
+
+.signin__heading {
+  margin: 0;
+  padding-right: var(--space-8);
+  font: 600 var(--fs-h2) / 1.15 var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+.signin__panel,
+.signin__form {
+  display: flex;
+  flex-direction: column;
+}
+
+.signin__panel {
+  gap: var(--space-6);
+}
+
+.signin__panel[hidden] {
+  display: none;
+}
+
+.signin__form {
+  gap: var(--space-3);
+}
+
+.signin__body {
+  margin: 0;
+  max-width: 65ch;
+}
+
+.signin__strong {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.signin__label {
+  font-size: var(--fs-small);
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.signin__input {
+  height: calc(var(--space-8) + var(--space-3));
+  padding: 0 var(--space-4);
+  background: var(--wall);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-fixture);
+  color: var(--text-primary);
+  font: 400 var(--fs-body) / 1.6 var(--font-ui);
+  transition: border-color var(--dur-base) var(--ease-settle);
+}
+
+.signin__input:focus {
+  border-color: var(--brass);
+}
+
+.signin__button {
+  height: calc(var(--space-8) + var(--space-3));
+  padding: 0 var(--space-4);
+  background: var(--wall);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-fixture);
+  font: 500 var(--fs-body) / 1.6 var(--font-ui);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease-settle),
+    border-color var(--dur-fast) var(--ease-settle);
+}
+
+.signin__button--primary {
+  background: var(--plinth-raised);
+}
+
+@media (hover: hover) {
+  .signin__button:hover:not(:disabled) {
+    background: var(--plinth-raised);
+    border-color: var(--text-faint);
+  }
+}
+
+.signin__button:disabled,
+.signin__input:disabled {
+  color: var(--text-faint);
+  cursor: default;
+}
+
+.signin__or {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  font-size: var(--fs-small);
+  color: var(--text-faint);
+}
+
+.signin__or::before,
+.signin__or::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--rule);
+}
+
+.signin__error {
+  margin: 0;
+  padding-left: var(--space-3);
+  border-left: 1px solid var(--oxblood);
+  font-size: var(--fs-small);
+  line-height: 1.4;
+  color: var(--oxblood);
+}
+
+.signin__error[hidden] {
+  display: none;
+}
+
+.signin__privacy {
+  margin: 0;
+  font-size: var(--fs-small);
+  line-height: 1.4;
+  color: var(--text-faint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signin,
+  .signin.is-open {
+    transform: none;
+  }
+}

@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "bench:search": "tsx scripts/bench-search.ts",
     "deploy": "tsx scripts/deploy.ts",
-    "deploy:preview": "tsx scripts/deploy.ts --preview"
+    "deploy:preview": "tsx scripts/deploy.ts --preview",
+    "emulators": "npx -y firebase-tools@15.29.0 emulators:start --only auth --project demo-curious-shit --non-interactive",
+    "dev:emulator": "VITE_AUTH_EMULATOR=http://127.0.0.1:9099 vite"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
@@ -20,6 +22,7 @@
     "wrangler": "^4.156.0"
   },
   "dependencies": {
+    "firebase": "^13.1.0",
     "minisearch": "^7.2.0"
   }
 }
