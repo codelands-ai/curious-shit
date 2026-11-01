@@ -26,7 +26,7 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-01 | OCR with native Tesseract installed locally, not tesseract.js | Faster and more accurate, which serves the 90% search target |
 | 2026-11-01 | The build runs on the owner's machine, not in CI | Keeps "one command, live in 5 minutes" simple; CI can come later |
 | 2026-11-01 | Added a seventh reaction: `shit` 💩 | Owner request, before phase 0 merged; it fits the site's name |
-| 2026-11-01 | `.claude/PRD.md` is the authoritative PRD; the claude.ai doc is a read-only copy for sharing | The repo file is versioned and read by every session |
+| 2026-11-01 | `.claude/PRD.md` is the only PRD; the claude.ai shared copy is dropped and no longer maintained | The repo file is versioned and read by every session; one copy can't drift |
 
 ## Plan
 

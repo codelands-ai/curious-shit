@@ -1,6 +1,6 @@
 # Curious Shit — Content Model
 
-The page has six sections, top to bottom, fed by two data records. Only Must-Have features are covered. Source of truth: the [PRD](https://claude.ai/artifact/93uDkxQHT25FBAzsKhvTKm).
+The page has six sections, top to bottom, fed by two data records. Only Must-Have features are covered. Source of truth: the [PRD](PRD.md).
 
 ## 1. Search bar (pinned to the top)
 
