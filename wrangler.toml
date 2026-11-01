@@ -1,0 +1,9 @@
+# The static site, served as Workers static assets (no Worker script).
+# The reactions Worker (phase 6) has its own config in worker/.
+name = "curious-shit"
+compatibility_date = "2026-11-01"
+workers_dev = true
+preview_urls = true
+
+[assets]
+directory = "./dist"

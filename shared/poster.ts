@@ -23,4 +23,8 @@ export interface IndexPoster extends FeedPoster {
 }
 
 export const FEED_URL = "/generated/feed.json";
+
+// Rendered poster width: full width minus gutters (16/32/64px), capped at --poster-max (1600px).
+export const POSTER_SIZES =
+  "(min-width: 1280px) min(calc(100vw - 128px), 1600px), (min-width: 768px) calc(100vw - 64px), calc(100vw - 32px)";
 export const INDEX_URL = "/generated/index.json";

@@ -18,7 +18,8 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-01 | Phase 0: folder layout, Vite + TypeScript toolchain, shared reactions, design tokens, blank page | PR #3 |
 | 2026-11-01 | Phase 1: `npm run ingest` builds the manifest, WebP variants and index; OCR verified on the three sample posters | PR #4 |
 | 2026-11-01 | Phase 2: looping gallery feed with batching, entrance motion, picture lights and the feed error line | PR #5 |
-| 2026-11-01 | Phase 3: MiniSearch search bar with results, clearing, `?q=` links, error line, speed and accuracy checks | `phase-3-search` |
+| 2026-11-01 | Phase 3: MiniSearch search bar with results, clearing, `?q=` links, error line, speed and accuracy checks | PR #6 |
+| 2026-11-01 | Phase 4: Cloudflare config, caching headers, `npm run deploy` / `deploy:preview`, first production deploy, mobile LCP fixes | `phase-4-first-deploy` |
 
 ## Decisions
 
@@ -36,6 +37,12 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-01 | Search terms go in the URL (`?q=`) as part of phase 3 | A Should-Have, but small; makes searches shareable |
 | 2026-11-01 | No-results line: "Can't find any curious shit. Try something else." | Owner's wording |
 | 2026-11-01 | If `index.json` fails to load, the search status shows "Search is closed for a moment. Shit happens." and the feed stays | Matches the feed's error line; specs had no search error state |
+| 2026-11-01 | Deploys upload `dist/` from the owner's machine with Wrangler; Cloudflare doesn't build from GitHub | Tesseract and the generated images exist only locally |
+| 2026-11-01 | `npm run deploy` commits new posters and the manifest and pushes them straight to `main` after a successful upload | Keeps publishing to one command and never loses poster IDs. Code still goes through PRs; only `posters/` and `data/manifest.json` skip review |
+| 2026-11-01 | Site name `curious-shit` on the free Cloudflare address; custom domain later | Owner's choice |
+| 2026-11-01 | Host as Workers static assets (`wrangler deploy`, `workers.dev` address) instead of classic Pages | Wrangler 4.156 redirects Pages project creation to Workers and calls classic Pages "the previous version". Static assets with no script still keep the reactions Worker the only server-side code |
+| 2026-11-01 | First production deploy ran once from `phase-4-first-deploy` with plain `wrangler deploy` | Previews need the Worker to exist; owner chose to go live before merging so live checks could be done in the PR |
+| 2026-11-01 | The build writes the newest poster's card into `index.html`, preloads its image and `feed.json`, loads fonts without blocking paint, and gives later posters low fetch priority | Mobile Lighthouse LCP was 2.6–2.8s with the card built by JavaScript; median is now 1.64s |
 | 2026-11-01 | `.claude/PRD.md` is the only PRD; the claude.ai shared copy is dropped and no longer maintained | The repo file is versioned and read by every session; one copy can't drift |
 
 ## Plan
@@ -50,7 +57,7 @@ Each phase ends with something that can be seen or tested. Phases and steps are 
 | 1 | Ingest pipeline | done | One command turns `posters/` into WebP variants, a manifest and a search index |
 | 2 | Static gallery | done | Infinite scroll of posters styled to the design standard, running locally |
 | 3 | Search | done | Pinned search bar filtering the feed by filename and OCR text |
-| 4 | First deploy | proposed | Gallery and search live on Cloudflare Pages |
+| 4 | First deploy | in progress | Gallery and search live on Cloudflare (Workers static assets) |
 | 5 | Sign-in | proposed | Firebase Auth with Google and email magic link |
 | 6 | Reactions | proposed | Worker + D1 endpoint, reaction bar wired up, rate limiting |
 | 7 | Launch readiness | proposed | Privacy page, graceful degradation, success criteria checked |
@@ -146,6 +153,28 @@ curious-shit/
 - Speed: slowest of 160 benchmark searches 11ms (target 200ms). A 100-character query is the slowest case.
 - In headless Chromium: `index.json` and MiniSearch load only on first focus; results, "N exhibits", back-wall and no-results lines, Escape, clear button, `?q=` links and the index-failure line all work; below 768px the wordmark hides and the input fills the strip with a 44px clear button.
 
+### Phase 4: First deploy (confirmed 2026-11-01)
+
+| # | Step | Who | Detail | Status |
+| --- | --- | --- | --- | --- |
+| 4.1 | Cloudflare account | Owner | Free plan at dash.cloudflare.com/sign-up. | done |
+| 4.2 | Connect Wrangler | Owner | `! npx wrangler login` in Claude Code; approve in the browser. | done |
+| 4.3 | Cloudflare config | Claude | Root `wrangler.toml`: Worker `curious-shit` with `[assets] directory = "./dist"`, no script, `workers.dev` and preview URLs on. The Worker is created by the first production deploy. (Changed from a classic Pages project; see Decisions.) | done |
+| 4.4 | Caching rules | Claude | `public/_headers`: poster images and build assets cached for a year (names carry a hash); `feed.json` and `index.json` always revalidated; basic security headers. | done |
+| 4.5 | `npm run deploy` | Claude | Requires `main`, in sync with `origin/main`, with no uncommitted changes outside `posters/` and `data/manifest.json`. Runs ingest, type-check and build, uploads, then commits and pushes poster changes. Prints the URL and total time. | done |
+| 4.6 | Preview deploys | Claude | `npm run deploy:preview` runs `wrangler versions upload --preview-alias <branch>`: a preview URL for the branch that never touches production or commits. Needs the Worker to exist, so only works after the first production deploy. | done |
+| 4.7 | Live check | Claude | Feed, search, `?q=` and cache headers on the live site; Lighthouse mobile LCP under 2.5s; time a new-poster deploy against 5 minutes. | in progress |
+
+**Done when:** the site is live on `workers.dev`, search works there, mobile Lighthouse LCP is under 2.5s, and a new poster goes from `posters/` to live in under 5 minutes.
+
+**Verified 2026-11-01:**
+- Live at https://curious-shit.smokeraven667.workers.dev (first deploy). Feed, search and `?q=` work there with no console errors; unknown paths return 404.
+- Headers: posters and `/assets/*` are `max-age=31536000, immutable`; HTML, `feed.json` and `index.json` are `max-age=0, must-revalidate`; security headers on every response; text responses are Brotli-compressed.
+- `npm run deploy:preview` works (alias `phase-4-first-deploy-curious-shit.smokeraven667.workers.dev`) and leaves production untouched.
+- Deploy guards tested in a throwaway clone: wrong branch, code changes, behind and ahead of GitHub are all refused; a new poster alone passes.
+- Mobile Lighthouse (simulated slow 4G, 4× CPU), five runs on the preview: LCP 1.59, 1.64, 1.59, 2.04, 3.12s, median **1.64s**; scores 92–100; CLS 0. The 3.12s run spent 1.9s in render delay with downloads on time, which matches local CPU contention rather than the site.
+- **Still to do:** time a real new-poster publish (`jacob-esau.webp`, added by the owner) with `npm run deploy` from `main` after this PR merges. That deploy also ships the LCP fixes to production.
+
 ## Environment
 
 Checked 2026-11-01 on the owner's machine (WSL2, Linux):
@@ -173,6 +202,10 @@ Checked 2026-11-01 on the owner's machine (WSL2, Linux):
 - At 1,000 posters, `index.json` is about 5 MB (2.6 MB gzipped for random text; real text compresses better) and building the search index takes about 0.8s on the owner's machine, likely 2–4s on a phone. This happens once, on the first search. If it's too slow, ingest can pre-build the MiniSearch index (`toJSON`/`loadJSON`) or the build can move to a Web Worker.
 - The focused search box shows both the brass border (design standard, Search) and the standard brass focus outline (design standard, Focus), which reads as a double ring. Both rules were followed as written; drop one if it looks heavy.
 - Very common words (e.g. "the") match every poster. That's expected; results are ranked, not filtered further.
+- The live address includes the Cloudflare account's subdomain (`smokeraven667.workers.dev`). A custom domain would replace it.
+- Preview URLs are public to anyone who has the link.
+- `npm run deploy:preview` runs ingest, so new posters in `posters/` get IDs in the local manifest. That change stays uncommitted; the production deploy commits it.
+- A shared `?q=` link may briefly show the newest poster (written into the HTML) before the results replace it.
 - Fonts load from Google Fonts at runtime, so the page needs network access to show the right typefaces.
 - Cloudflare and Firebase accounts and projects have to be created by the owner; Claude can't sign up for them. Deferred to phase 4 (Cloudflare) and phase 5 (Firebase), when they're first needed.
 - Generated images aren't committed, so a fresh clone must run `npm run ingest` before `npm run dev` shows posters.

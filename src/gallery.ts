@@ -1,6 +1,7 @@
 // The gallery feed: renders posters in batches of 8. The full feed loops forever;
 // search results are a finite list that ends at the back wall.
 
+import { cardHtml } from "../shared/card.ts";
 import { FEED_URL, type FeedPoster } from "../shared/poster.ts";
 
 const BATCH_SIZE = 8;
@@ -11,8 +12,6 @@ export const LINES = {
   noResults: "Can't find any curious shit. Try something else.",
 };
 
-// Rendered image width: full width minus gutters (16/32/64px), capped at --poster-max.
-const SIZES = "(min-width: 1280px) min(calc(100vw - 128px), 1600px), (min-width: 768px) calc(100vw - 64px), calc(100vw - 32px)";
 
 export interface ShowOptions {
   /** Start over from the top after the last poster (full feed only). */
@@ -72,7 +71,17 @@ export class Gallery {
     this.options = options;
     this.next = 0;
     this.rendered = 0;
-    this.feed.replaceChildren();
+
+    // The build writes the newest poster's card into the HTML so it paints before any script runs.
+    // Adopt it instead of rebuilding it; a new element would repaint and push LCP later.
+    const prerendered = this.feed.firstElementChild as HTMLElement | null;
+    const adopt = options.loop && prerendered?.dataset.posterId === posters[0]?.id && this.feed.childElementCount === 1;
+    if (adopt) {
+      this.next = 1 % posters.length;
+      this.rendered = 1;
+    } else {
+      this.feed.replaceChildren();
+    }
 
     if (posters.length === 0) {
       if (options.emptyLine) this.showLine(options.emptyLine);
@@ -103,8 +112,8 @@ export class Gallery {
     for (let i = 0; i < BATCH_SIZE && this.hasMore(); i++) {
       const first = this.rendered === 0;
       const card = createCard(this.posters[this.next]!, first);
-      if (first || !this.options.entrance) card.classList.add("is-lit", "is-still");
-      else this.entrance.observe(card);
+      if (!first && !this.options.entrance) card.classList.add("is-lit", "is-still");
+      else if (!first) this.entrance.observe(card);
       fragment.append(card);
       this.next++;
       if (this.options.loop) this.next %= this.posters.length;
@@ -131,35 +140,7 @@ export async function loadFeed(): Promise<FeedPoster[]> {
 }
 
 function createCard(poster: FeedPoster, first: boolean): HTMLElement {
-  const figure = document.createElement("figure");
-  figure.className = "exhibit";
-  figure.dataset.posterId = poster.id;
-
-  const frame = document.createElement("div");
-  frame.className = "exhibit__frame";
-
-  const img = document.createElement("img");
-  img.className = "exhibit__image";
-  img.alt = poster.title;
-  img.width = poster.width;
-  img.height = poster.height;
-  img.decoding = "async";
-  if (first) {
-    img.loading = "eager";
-    img.fetchPriority = "high";
-  } else {
-    img.loading = "lazy";
-  }
-  const variants = [...poster.src].sort((a, b) => a.width - b.width);
-  img.sizes = SIZES;
-  img.srcset = variants.map((v) => `${v.url} ${v.width}w`).join(", ");
-  img.src = variants[variants.length - 1]!.url;
-
-  const caption = document.createElement("figcaption");
-  caption.className = "exhibit__title";
-  caption.textContent = poster.title;
-
-  frame.append(img);
-  figure.append(frame, caption);
-  return figure;
+  const template = document.createElement("template");
+  template.innerHTML = cardHtml(poster, first);
+  return template.content.firstElementChild as HTMLElement;
 }
