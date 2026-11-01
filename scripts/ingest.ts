@@ -8,6 +8,7 @@ import { availableParallelism, tmpdir } from "node:os";
 import { basename, extname, join } from "node:path";
 import { promisify } from "node:util";
 import sharp from "sharp";
+import type { FeedPoster, IndexPoster } from "../shared/poster.ts";
 
 const run = promisify(execFile);
 
@@ -18,6 +19,7 @@ const OCR_CACHE_DIR = join(ROOT, ".cache/ocr");
 const GENERATED_DIR = join(ROOT, "public/generated");
 const IMAGES_DIR = join(GENERATED_DIR, "posters");
 const INDEX_PATH = join(GENERATED_DIR, "index.json");
+const FEED_PATH = join(GENERATED_DIR, "feed.json");
 const IMAGES_URL = "/generated/posters";
 
 const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
@@ -50,16 +52,7 @@ interface ScannedFile {
   height: number;
 }
 
-interface PosterRecord {
-  id: string;
-  title: string;
-  keywords: string[];
-  ocr_text: string;
-  src: { width: number; url: string }[];
-  width: number;
-  height: number;
-  added_at: string;
-}
+type PosterRecord = IndexPoster;
 
 const counts = {
   new: 0,
@@ -116,6 +109,10 @@ async function main(): Promise<void> {
   manifest.posters.sort((a, b) => a.added_at.localeCompare(b.added_at) || a.id.localeCompare(b.id));
   const manifestChanged = await writeIfChanged(MANIFEST_PATH, json(manifest));
   const indexChanged = await writeIfChanged(INDEX_PATH, json({ posters: records }));
+  const feed = records.map(
+    ({ id, title, src, width, height, added_at }): FeedPoster => ({ id, title, src, width, height, added_at }),
+  );
+  const feedChanged = await writeIfChanged(FEED_PATH, json({ posters: feed }));
 
   // 1.9 Report.
   const seconds = ((Date.now() - started) / 1000).toFixed(1);
@@ -125,7 +122,7 @@ async function main(): Promise<void> {
       `  new ${counts.new} · renamed ${counts.renamed} · replaced ${counts.replaced} · restored ${counts.restored} · removed ${counts.removed} · unchanged ${counts.unchanged}`,
       `  OCR: ${counts.ocrCorrection} from correction files · ${counts.ocrCached} cached · ${counts.ocrTesseract} run`,
       `  images written: ${counts.imagesWritten}`,
-      `  manifest ${manifestChanged ? "updated" : "unchanged"} · index ${indexChanged ? "updated" : "unchanged"}`,
+      `  manifest ${manifestChanged ? "updated" : "unchanged"} · index ${indexChanged ? "updated" : "unchanged"} · feed ${feedChanged ? "updated" : "unchanged"}`,
     ].join("\n"),
   );
 }
@@ -310,8 +307,10 @@ function makeKeywords(words: string[]): string[] {
 // File names include a short content hash, so a replaced poster gets new URLs and the
 // old ones can be cached forever.
 async function writeVariants(id: string, s: ScannedFile): Promise<PosterRecord["src"]> {
-  const widths = WIDTHS.filter((w) => w <= s.width);
-  if (widths.length === 0) widths.push(s.width);
+  // Standard widths below the original, plus the original itself when it's under the largest
+  // standard width, so the sharpest version is never thrown away (and nothing is upscaled).
+  const widths = WIDTHS.filter((w) => w < s.width);
+  if (s.width <= WIDTHS[WIDTHS.length - 1]!) widths.push(s.width);
   const short = s.hash.slice(0, 8);
   return Promise.all(
     widths.map(async (width) => {

@@ -1,0 +1,196 @@
+/* Gallery: search-bar strip, poster cards, feed status. Design standard sections 3–5. */
+
+@property --glow {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
+}
+
+:root {
+  --strip-height: var(--space-16);
+  --first-exhibit-gap: var(--space-8);
+  --placard-gap: var(--space-3);
+  --fs-placard-responsive: var(--fs-body);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --first-exhibit-gap: var(--space-12);
+    --placard-gap: var(--space-4);
+    --fs-placard-responsive: var(--fs-placard);
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --first-exhibit-gap: var(--space-16);
+  }
+}
+
+/* ---------- Search-bar strip (4.5 glass) ---------- */
+
+.strip {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  height: var(--strip-height);
+  padding: 0 var(--gutter);
+  background: rgba(18, 17, 16, 0.72);
+  backdrop-filter: blur(12px) saturate(0.8);
+  border-bottom: 1px solid var(--rule);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .strip {
+    background: var(--wall-deep);
+  }
+}
+
+.wordmark {
+  margin: 0;
+  font-family: var(--font-placard);
+  font-weight: 500;
+  font-size: var(--fs-wordmark);
+  line-height: 1;
+  letter-spacing: 0.12em;
+  color: var(--text-primary);
+}
+
+/* ---------- Feed ---------- */
+
+.hallway {
+  padding: var(--first-exhibit-gap) var(--gutter) var(--exhibit-gap);
+}
+
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--exhibit-gap);
+  max-width: var(--poster-max);
+  margin: 0 auto;
+}
+
+/* ---------- Poster card ---------- */
+
+.exhibit {
+  margin: 0;
+}
+
+.exhibit__frame {
+  position: relative;
+  isolation: isolate;
+}
+
+/* 4.3 Picture light: behind the image, 48px past its top, left and right. */
+.exhibit__frame::before {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--space-12)) calc(-1 * var(--space-12)) 0;
+  z-index: -1;
+  pointer-events: none;
+  --glow: var(--spot);
+  background: radial-gradient(ellipse 70% 60% at 50% 0%, var(--glow), transparent 70%);
+  opacity: 0;
+  transition:
+    opacity var(--dur-lights) var(--ease-settle) 100ms,
+    --glow var(--dur-slow) var(--ease-settle);
+}
+
+.exhibit__image {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--plinth);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.4),
+    0 24px 48px -12px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transform: translateY(var(--space-4));
+  transition:
+    opacity var(--dur-slow) var(--ease-settle),
+    transform var(--dur-slow) var(--ease-settle);
+}
+
+.exhibit.is-lit .exhibit__image {
+  opacity: 1;
+  transform: none;
+}
+
+.exhibit.is-lit .exhibit__frame::before {
+  opacity: 1;
+}
+
+/* The first poster appears immediately so it doesn't delay LCP. */
+.exhibit.is-first .exhibit__image,
+.exhibit.is-first .exhibit__frame::before {
+  transition: none;
+}
+
+@media (hover: hover) {
+  .exhibit:hover .exhibit__frame::before {
+    --glow: var(--spot-hover);
+  }
+}
+
+.exhibit__title {
+  margin-top: var(--placard-gap);
+  font-family: var(--font-placard);
+  font-weight: 500;
+  font-size: var(--fs-placard-responsive);
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+
+/* ---------- Feed status ---------- */
+
+.feed-status {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--exhibit-gap);
+}
+
+.feed-status__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--brass);
+  animation: pulse 1.6s linear infinite;
+}
+
+.feed-status__line {
+  margin: 0;
+  font-size: var(--fs-small);
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  color: var(--text-faint);
+  text-align: center;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ---------- Reduced motion: opacity only, no entrance ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .exhibit__image,
+  .exhibit__frame::before {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .feed-status__dot {
+    animation: none;
+    opacity: 1;
+  }
+}
