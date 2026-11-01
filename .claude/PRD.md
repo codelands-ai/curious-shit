@@ -27,7 +27,7 @@ Curious Shit is a single-curator gallery. Only the owner publishes posters; visi
 - **Always-visible search bar:** client-side full-text search over filenames and OCR text, with results filtering the scroll in place.
 - **Firebase Authentication:** visitors sign in with Google or an email magic link to react; browsing and searching need no account.
 - **Reactions endpoint (Cloudflare Worker + D1):** verifies the Firebase ID token, adds a reaction on first tap and removes it on second, allows one reaction per user per emoji per image, and returns counts per image.
-- **Fixed reaction set:** six reactions, shown with live counts under each poster: like 👍, hate 👎, angry 😡, wtf 😳, mind-blown 🤯 and lol 😂.
+- **Fixed reaction set:** seven reactions, shown with live counts under each poster: like 👍, hate 👎, angry 😡, wtf 😳, mind-blown 🤯, lol 😂 and shit 💩.
 - **Owner-only publishing:** new posters are added only by the owner through the repo and build, with no public upload path.
 - **Rate limiting on the Worker** to block scripted reaction floods.
 - **Privacy page:** one short page stating that only the Firebase user ID is stored and email addresses stay with Firebase.
@@ -99,7 +99,7 @@ The search fields `ocr_text` and `keywords` never appear on the card; they live 
 
 | Field | Description | Constraints |
 | --- | --- | --- |
-| `reaction_types` | Fixed set of emoji | Six keys, each with an emoji and a screen-reader label: like, hate, angry, wtf, mind-blown, lol. One config file shared by the frontend and the Worker. |
+| `reaction_types` | Fixed set of emoji | Seven keys, each with an emoji and a screen-reader label: like, hate, angry, wtf, mind-blown, lol, shit. One config file shared by the frontend and the Worker. |
 | `count` (per type) | Total reactions | Whole number, shortened at 1,000 and up ("1.2k"). Hidden when zero. |
 | `user_state` (per type) | Whether the current user has reacted; tapping again removes it | Boolean, shown only when signed in, as a subtle highlight. |
 | `signed_out_prompt` | Shown when a signed-out user taps an emoji | One line, e.g. "Sign in to leave your mark". 40 characters max. |
@@ -153,7 +153,7 @@ All ten gaps found while mapping the content model are resolved as follows; the 
 
 1. **Stable poster IDs:** a manifest file fixes each poster's ID at first ingest, so renames never orphan reactions.
 2. **Alt text:** the title serves as alt text for now; hand-written alt text arrives with the sidecar file (Should-Have).
-3. **Reaction set:** like 👍, hate 👎, angry 😡, wtf 😳, mind-blown 🤯, lol 😂.
+3. **Reaction set:** like 👍, hate 👎, angry 😡, wtf 😳, mind-blown 🤯, lol 😂, shit 💩.
 4. **Feed order:** newest first, by the `added_at` date recorded in the manifest.
 5. **Removing a reaction:** a second tap removes it; the Worker supports add and remove.
 6. **Email sign-in:** magic link, no passwords.

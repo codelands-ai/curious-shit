@@ -1,6 +1,6 @@
 # Curious Shit — Content Model
 
-The page has six sections, top to bottom, fed by two data records. Only Must-Have features are covered. Source of truth: the [PRD](https://claude.ai/artifact/93uDkxQHT25FBAzsKhvTKm).
+The page has six sections, top to bottom, fed by two data records. Only Must-Have features are covered. Source of truth: the [PRD](PRD.md).
 
 ## 1. Search bar (pinned to the top)
 
@@ -27,7 +27,7 @@ The search fields `ocr_text` and `keywords` never appear on the card; they live 
 
 | Field | Description | Constraints |
 | --- | --- | --- |
-| `reaction_types` | Fixed set of emoji | Six keys, each with an emoji and a screen-reader label (see table below). One config file shared by the frontend and the Worker. |
+| `reaction_types` | Fixed set of emoji | Seven keys, each with an emoji and a screen-reader label (see table below). One config file shared by the frontend and the Worker. |
 | `count` (per type) | Total reactions | Whole number, shortened at 1,000 and up ("1.2k"). Hidden when zero. |
 | `user_state` (per type) | Whether the current user has reacted; tapping again removes it | Boolean, shown only when signed in, as a subtle highlight. |
 | `signed_out_prompt` | Shown when a signed-out user taps an emoji | One line, e.g. "Sign in to leave your mark". 40 characters max. |
@@ -40,6 +40,7 @@ The search fields `ocr_text` and `keywords` never appear on the card; they live 
 | `wtf` | 😳 | WTF |
 | `mind_blown` | 🤯 | Mind-blown |
 | `lol` | 😂 | LOL |
+| `shit` | 💩 | Shit |
 
 ## 4. Feed status (bottom of the feed)
 

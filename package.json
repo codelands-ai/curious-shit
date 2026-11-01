@@ -1,0 +1,20 @@
+{
+  "name": "curious-shit",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "ingest": "tsx scripts/ingest.ts",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "deploy": "echo \"deploy is not set up yet (phase 4)\" && exit 1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "sharp": "^0.35.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "wrangler": "^4.156.0"
+  }
+}
