@@ -49,6 +49,7 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-01 | Sign-in dialog heading "Sign in to react"; privacy note "We keep only an anonymous ID. Your email stays with Google's Firebase." | Owner approved |
 | 2026-11-01 | Signed-in control shows the user's initial, not their Google photo | Owner's choice: no extra download, quieter |
 | 2026-11-01 | Privacy page moves from phase 7 to phase 5 | The sign-in dialog links to it |
+| 2026-11-01 | Stay on Spark and accept 5 email-link sign-in emails per day; when the cap is hit the dialog says so and suggests Google | Verified on firebase.google.com/docs/auth/limits (updated 2026-10-20): "Email link sign-in emails 5 emails/day" on Spark, 25,000 on Blaze, "Please add a billing instrument to go beyond 5". Signed-in visitors stay signed in, so only new email sign-ins count. Revisit if it bites |
 | 2026-11-01 | `.claude/PRD.md` is the only PRD; the claude.ai shared copy is dropped and no longer maintained | The repo file is versioned and read by every session; one copy can't drift |
 
 ## Plan
