@@ -218,3 +218,21 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- Curious Shit: Node / Cloudflare / Firebase ---
+node_modules/
+.wrangler/
+.dev.vars
+.dev.vars.*
+.env.*
+!.env.example
+.firebase/
+firebase-debug*.log
+service-account*.json
+
+# Claude Code per-user settings
+.claude/settings.local.json
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
