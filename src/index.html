@@ -18,8 +18,28 @@
   <body>
     <header class="strip">
       <h1 class="wordmark">Curious Shit</h1>
+      <form id="search" class="search" role="search" action="/" autocomplete="off">
+        <input
+          id="search-input"
+          class="search__input"
+          type="search"
+          name="q"
+          maxlength="100"
+          placeholder="Search every word on every wall"
+          aria-label="Search the posters"
+          enterkeyhint="search"
+          spellcheck="false"
+        />
+        <button id="search-clear" class="search__clear" type="button" aria-label="Clear search" hidden>
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </button>
+      </form>
+      <div class="strip__end"></div>
     </header>
-    <main class="hallway">
+    <main id="hallway" class="hallway">
+      <p id="result-status" class="result-status" aria-live="polite" hidden></p>
       <div id="feed" class="feed"></div>
       <div id="feed-status" class="feed-status" aria-live="polite"></div>
     </main>

@@ -33,8 +33,11 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  display: flex;
+  display: grid;
+  /* Wordmark | search (centered, max 560px) | auth_control (phase 5). */
+  grid-template-columns: 1fr minmax(0, 560px) 1fr;
   align-items: center;
+  column-gap: var(--space-4);
   height: var(--strip-height);
   padding: 0 var(--gutter);
   background: rgba(18, 17, 16, 0.72);
@@ -49,7 +52,9 @@
 }
 
 .wordmark {
+  display: none;
   margin: 0;
+  white-space: nowrap;
   font-family: var(--font-placard);
   font-weight: 500;
   font-size: var(--fs-wordmark);
@@ -58,10 +63,119 @@
   color: var(--text-primary);
 }
 
+/* Below 768px the wordmark hides and the input fills the space up to auth_control. */
+@media (max-width: 767px) {
+  .strip {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+@media (min-width: 768px) {
+  .wordmark {
+    display: block;
+  }
+}
+
+/* ---------- Search ---------- */
+
+.search {
+  position: relative;
+  margin: 0;
+}
+
+.search__input {
+  display: block;
+  width: 100%;
+  height: calc(var(--space-8) + var(--space-2));
+  padding: 0 calc(var(--space-8) + var(--space-3)) 0 var(--space-4);
+  appearance: none;
+  background: var(--plinth);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-fixture);
+  color: var(--text-primary);
+  font: 400 var(--fs-body) / 1.6 var(--font-ui);
+  transition:
+    border-color var(--dur-base) var(--ease-settle),
+    background-color var(--dur-fast) var(--ease-settle);
+}
+
+.search__input::placeholder {
+  color: var(--text-faint);
+  opacity: 1;
+}
+
+.search__input:hover {
+  background: var(--plinth-raised);
+}
+
+.search__input:focus {
+  border-color: var(--brass);
+}
+
+.search__input::-webkit-search-cancel-button,
+.search__input::-webkit-search-decoration {
+  appearance: none;
+}
+
+/* 44px touch target around a 16px icon, inside the input's right edge. */
+.search__clear {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: calc(var(--space-8) + var(--space-3));
+  height: calc(var(--space-8) + var(--space-3));
+  padding: 0;
+  transform: translateY(-50%);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-fixture);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-settle);
+}
+
+.search__clear[hidden] {
+  display: none;
+}
+
+@media (hover: hover) {
+  .search__clear:hover {
+    color: var(--text-primary);
+  }
+}
+
 /* ---------- Feed ---------- */
 
 .hallway {
   padding: var(--first-exhibit-gap) var(--gutter) var(--exhibit-gap);
+  transition: opacity var(--dur-base) var(--ease-settle);
+}
+
+/* Search swap: fade out, replace, fade in. */
+.hallway.is-leaving {
+  opacity: 0;
+  transition: opacity var(--dur-exit) var(--ease-exit);
+}
+
+.result-status {
+  max-width: var(--poster-max);
+  margin: 0 auto var(--space-6);
+  font-family: var(--font-placard);
+  font-weight: 500;
+  font-size: var(--fs-small);
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.result-status.is-error {
+  font-family: var(--font-ui);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: var(--text-faint);
 }
 
 .feed {
@@ -122,9 +236,9 @@
   opacity: 1;
 }
 
-/* The first poster appears immediately so it doesn't delay LCP. */
-.exhibit.is-first .exhibit__image,
-.exhibit.is-first .exhibit__frame::before {
+/* The first poster and search results appear without the entrance animation. */
+.exhibit.is-still .exhibit__image,
+.exhibit.is-still .exhibit__frame::before {
   transition: none;
 }
 
