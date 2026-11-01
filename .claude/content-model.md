@@ -7,8 +7,8 @@ The page has six sections, top to bottom, fed by two data records. Only Must-Hav
 | Field | Description | Constraints |
 | --- | --- | --- |
 | `site_name` | Wordmark | "Curious Shit". Small caps, text only for v1. |
-| `search_input` | Free-text query box | Up to 100 characters. Results update about 150 ms after typing stops. Placeholder in the museum-placard voice, e.g. "Search every word on every wall", 40 characters max. |
-| `result_status` | Count shown while a search is active | Format: "N exhibits". Hidden when the box is empty. |
+| `search_input` | Free-text query box | Up to 100 characters. Results update about 150 ms after typing stops. The query is kept in the URL as `?q=` so searches can be shared. Placeholder in the museum-placard voice, e.g. "Search every word on every wall", 40 characters max. |
+| `result_status` | Count shown while a search is active | Format: "N exhibits" ("1 exhibit"). Hidden when the box is empty. If the search index can't be loaded: "Search is closed for a moment. Shit happens." |
 | `clear_control` | Resets the feed | Icon button with an accessible label. |
 | `auth_control` | Sign-in or account button | Signed out: "Sign in to react". Signed in: avatar or initial, plus sign-out. |
 
@@ -48,7 +48,7 @@ The search fields `ocr_text` and `keywords` never appear on the card; they live 
 | --- | --- | --- |
 | `loading` | Shown while the next batch loads | Quiet animation, no text. |
 | `end_of_feed` | Shown when a search runs out of results | One wry line, e.g. "You've reached the back wall." 50 characters max. The unfiltered feed loops, so it never shows there. |
-| `no_results` | Shown when a search finds nothing | One line plus a suggestion. 80 characters max. |
+| `no_results` | Shown when a search finds nothing | "Can't find any curious shit. Try something else." |
 | `feed_unavailable` | Shown in place of the feed when the poster list can't be loaded | "The gallery is closed for a moment. Shit happens." |
 
 ## 5. Sign-in dialog
