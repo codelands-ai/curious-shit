@@ -1,3 +1,22 @@
 {
-  "posters": []
+  "posters": [
+    {
+      "id": "geologic-time-scale",
+      "file": "geologic-time-scale.webp",
+      "hash": "0adb0bda7f91019a42fa7b4728b4fb961c0319946b06041febcb494b2245b9d1",
+      "added_at": "2026-11-01T16:09:36.123Z"
+    },
+    {
+      "id": "gnostic-cosmology",
+      "file": "gnostic-cosmology.jpg",
+      "hash": "b79391e72037317b175c0a76c7db5220d9216cd9ddcab04a1950f15328a8c36e",
+      "added_at": "2026-11-01T16:09:36.123Z"
+    },
+    {
+      "id": "resurrection-overview-jehovahs-witness-vs-seventh-day-adventist",
+      "file": "resurrection-overview-jehovahs-witness-vs-seventh-day-adventist.webp",
+      "hash": "a4c6a000f24bd509c954698ff429c6de96ee20bc5970383192442372f04c3125",
+      "added_at": "2026-11-01T16:09:36.123Z"
+    }
+  ]
 }
