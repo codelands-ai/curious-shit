@@ -19,7 +19,8 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-01 | Phase 1: `npm run ingest` builds the manifest, WebP variants and index; OCR verified on the three sample posters | PR #4 |
 | 2026-11-01 | Phase 2: looping gallery feed with batching, entrance motion, picture lights and the feed error line | PR #5 |
 | 2026-11-01 | Phase 3: MiniSearch search bar with results, clearing, `?q=` links, error line, speed and accuracy checks | PR #6 |
-| 2026-11-01 | Phase 4: Cloudflare config, caching headers, `npm run deploy` / `deploy:preview`, first production deploy, mobile LCP fixes | `phase-4-first-deploy` |
+| 2026-11-01 | Phase 4: Cloudflare config, caching headers, `npm run deploy` / `deploy:preview`, first production deploy, mobile LCP fixes | PR #7 |
+| 2026-11-01 | First poster published with `npm run deploy`: `jacob-esau.webp`, live and searchable in 12s | commit `98a8732` |
 
 ## Decisions
 
@@ -57,7 +58,7 @@ Each phase ends with something that can be seen or tested. Phases and steps are 
 | 1 | Ingest pipeline | done | One command turns `posters/` into WebP variants, a manifest and a search index |
 | 2 | Static gallery | done | Infinite scroll of posters styled to the design standard, running locally |
 | 3 | Search | done | Pinned search bar filtering the feed by filename and OCR text |
-| 4 | First deploy | in progress | Gallery and search live on Cloudflare (Workers static assets) |
+| 4 | First deploy | done | Gallery and search live on Cloudflare (Workers static assets) |
 | 5 | Sign-in | proposed | Firebase Auth with Google and email magic link |
 | 6 | Reactions | proposed | Worker + D1 endpoint, reaction bar wired up, rate limiting |
 | 7 | Launch readiness | proposed | Privacy page, graceful degradation, success criteria checked |
@@ -153,7 +154,7 @@ curious-shit/
 - Speed: slowest of 160 benchmark searches 11ms (target 200ms). A 100-character query is the slowest case.
 - In headless Chromium: `index.json` and MiniSearch load only on first focus; results, "N exhibits", back-wall and no-results lines, Escape, clear button, `?q=` links and the index-failure line all work; below 768px the wordmark hides and the input fills the strip with a 44px clear button.
 
-### Phase 4: First deploy (confirmed 2026-11-01)
+### Phase 4: First deploy (done 2026-11-01)
 
 | # | Step | Who | Detail | Status |
 | --- | --- | --- | --- | --- |
@@ -163,7 +164,7 @@ curious-shit/
 | 4.4 | Caching rules | Claude | `public/_headers`: poster images and build assets cached for a year (names carry a hash); `feed.json` and `index.json` always revalidated; basic security headers. | done |
 | 4.5 | `npm run deploy` | Claude | Requires `main`, in sync with `origin/main`, with no uncommitted changes outside `posters/` and `data/manifest.json`. Runs ingest, type-check and build, uploads, then commits and pushes poster changes. Prints the URL and total time. | done |
 | 4.6 | Preview deploys | Claude | `npm run deploy:preview` runs `wrangler versions upload --preview-alias <branch>`: a preview URL for the branch that never touches production or commits. Needs the Worker to exist, so only works after the first production deploy. | done |
-| 4.7 | Live check | Claude | Feed, search, `?q=` and cache headers on the live site; Lighthouse mobile LCP under 2.5s; time a new-poster deploy against 5 minutes. | in progress |
+| 4.7 | Live check | Claude | Feed, search, `?q=` and cache headers on the live site; Lighthouse mobile LCP under 2.5s; time a new-poster deploy against 5 minutes. | done |
 
 **Done when:** the site is live on `workers.dev`, search works there, mobile Lighthouse LCP is under 2.5s, and a new poster goes from `posters/` to live in under 5 minutes.
 
@@ -173,7 +174,7 @@ curious-shit/
 - `npm run deploy:preview` works (alias `phase-4-first-deploy-curious-shit.smokeraven667.workers.dev`) and leaves production untouched.
 - Deploy guards tested in a throwaway clone: wrong branch, code changes, behind and ahead of GitHub are all refused; a new poster alone passes.
 - Mobile Lighthouse (simulated slow 4G, 4× CPU), five runs on the preview: LCP 1.59, 1.64, 1.59, 2.04, 3.12s, median **1.64s**; scores 92–100; CLS 0. The 3.12s run spent 1.9s in render delay with downloads on time, which matches local CPU contention rather than the site.
-- **Still to do:** time a real new-poster publish (`jacob-esau.webp`, added by the owner) with `npm run deploy` from `main` after this PR merges. That deploy also ships the LCP fixes to production.
+- New-poster publish: `npm run deploy` on `main` with the owner's `jacob-esau.webp` took **12s** end to end (ingest, build, upload, commit and push as `98a8732`). OCR for this poster was already cached from preview runs; a first-time OCR adds roughly a second per poster. The poster is first in the live feed, its card is in the live HTML, and live searches for "Edomites", "birthright", "Isaac" and "impulsive" return it. This deploy also shipped the LCP fixes to production.
 
 ## Environment
 
