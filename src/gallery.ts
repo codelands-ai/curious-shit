@@ -146,7 +146,10 @@ function createCard(poster: FeedPoster, first: boolean): HTMLElement {
     img.loading = "eager";
     img.fetchPriority = "high";
   } else {
+    // Lazy images near the viewport still load early; low priority keeps them from
+    // competing with the first poster (the LCP element) for bandwidth.
     img.loading = "lazy";
+    img.fetchPriority = "low";
   }
   const variants = [...poster.src].sort((a, b) => a.width - b.width);
   img.sizes = POSTER_SIZES;
