@@ -1,0 +1,4 @@
+# Cloudflare Pages project for the static site. The reactions Worker (phase 6) has its own config in worker/.
+name = "curious-shit"
+pages_build_output_dir = "./dist"
+compatibility_date = "2026-11-01"

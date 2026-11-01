@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "bench:search": "tsx scripts/bench-search.ts",
-    "deploy": "echo \"deploy is not set up yet (phase 4)\" && exit 1"
+    "deploy": "tsx scripts/deploy.ts",
+    "deploy:preview": "tsx scripts/deploy.ts --preview"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
