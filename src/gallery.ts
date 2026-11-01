@@ -1,7 +1,7 @@
 // The gallery feed: renders posters in batches of 8. The full feed loops forever;
 // search results are a finite list that ends at the back wall.
 
-import { FEED_URL, type FeedPoster } from "../shared/poster.ts";
+import { FEED_URL, POSTER_SIZES, type FeedPoster } from "../shared/poster.ts";
 
 const BATCH_SIZE = 8;
 
@@ -11,8 +11,6 @@ export const LINES = {
   noResults: "Can't find any curious shit. Try something else.",
 };
 
-// Rendered image width: full width minus gutters (16/32/64px), capped at --poster-max.
-const SIZES = "(min-width: 1280px) min(calc(100vw - 128px), 1600px), (min-width: 768px) calc(100vw - 64px), calc(100vw - 32px)";
 
 export interface ShowOptions {
   /** Start over from the top after the last poster (full feed only). */
@@ -151,7 +149,7 @@ function createCard(poster: FeedPoster, first: boolean): HTMLElement {
     img.loading = "lazy";
   }
   const variants = [...poster.src].sort((a, b) => a.width - b.width);
-  img.sizes = SIZES;
+  img.sizes = POSTER_SIZES;
   img.srcset = variants.map((v) => `${v.url} ${v.width}w`).join(", ");
   img.src = variants[variants.length - 1]!.url;
 
