@@ -25,6 +25,7 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-01 | Plain TypeScript + Vite, no frontend framework | The page is small: feed, search bar, reaction bar, one dialog |
 | 2026-11-01 | OCR with native Tesseract installed locally, not tesseract.js | Faster and more accurate, which serves the 90% search target |
 | 2026-11-01 | The build runs on the owner's machine, not in CI | Keeps "one command, live in 5 minutes" simple; CI can come later |
+| 2026-11-01 | Added a seventh reaction: `shit` 💩 | Owner request, before phase 0 merged; it fits the site's name |
 | 2026-11-01 | `.claude/PRD.md` is the authoritative PRD; the claude.ai doc is a read-only copy for sharing | The repo file is versioned and read by every session |
 
 ## Plan
@@ -55,7 +56,7 @@ curious-shit/
 ├── posters/                 originals, committed; optional <name>.ocr.txt correction files beside them
 ├── data/manifest.json       permanent poster IDs and added_at dates, committed
 ├── scripts/ingest.ts        the build pipeline (phase 1)
-├── shared/reactions.ts      the six reactions, used by frontend and Worker
+├── shared/reactions.ts      the seven reactions, used by frontend and Worker
 ├── src/                     frontend: index.html, main.ts, styles/tokens.css
 ├── public/generated/        WebP variants and search index written by ingest, ignored by git
 ├── worker/                  reactions Worker: src/index.ts, schema.sql, wrangler.toml (phase 6)
@@ -70,7 +71,7 @@ curious-shit/
 | 0.2 | Move the three sample posters into `posters/` | Claude | done |
 | 0.3 | Create `package.json`, `tsconfig.json` and Vite config; install `typescript`, `vite`, `tsx`, `sharp`, `wrangler` as dev dependencies | Claude | done |
 | 0.4 | Create the folder layout with placeholder files | Claude | done |
-| 0.5 | Write `shared/reactions.ts` with the six reactions | Claude | done |
+| 0.5 | Write `shared/reactions.ts` with the reactions (seven, after adding 💩) | Claude | done |
 | 0.6 | Write `src/styles/tokens.css` from the design standard's token block, plus a blank page using it | Claude | done |
 | 0.7 | Add `public/generated/` to `.gitignore` | Claude | done |
 | 0.8 | npm scripts: `dev`, `ingest`, `build`, `deploy` (ingest and deploy as stubs until their phases) | Claude | done |

@@ -7,6 +7,7 @@ export const REACTIONS = [
   { key: "wtf", emoji: "😳", label: "WTF" },
   { key: "mind_blown", emoji: "🤯", label: "Mind-blown" },
   { key: "lol", emoji: "😂", label: "LOL" },
+  { key: "shit", emoji: "💩", label: "Shit" },
 ] as const;
 
 export type ReactionKey = (typeof REACTIONS)[number]["key"];
