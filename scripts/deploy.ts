@@ -94,7 +94,12 @@ function upload(previewBranch: string | null): Promise<string> {
     child.stderr.on("data", (c: Buffer) => tee(c, process.stderr));
     child.on("error", reject);
     child.on("close", (code) => {
-      if (code !== 0) return reject(new Error(`wrangler ${args[1]} exited with ${code}`));
+      if (code !== 0) {
+        if (previewBranch && /does not yet exist/.test(output)) {
+          return reject(new Error("Previews need the site to exist. Run the first production deploy (npm run deploy on main) first."));
+        }
+        return reject(new Error(`wrangler ${args[1]} exited with ${code}`));
+      }
       const urls = output.match(/https:\/\/[\w.-]+\.workers\.dev/g) ?? [];
       // A preview upload prints the version URL, then the alias URL; prefer the alias.
       const alias = previewBranch ? urls.find((u) => u.includes(`//${previewAlias(previewBranch)}-`)) : undefined;

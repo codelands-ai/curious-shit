@@ -21,7 +21,7 @@ Curious Shit is a single-curator gallery. Only the owner publishes posters; visi
 
 ### Must-Have
 
-- **Static gallery on Cloudflare Pages:** a continuous vertical scroll of full-width landscape posters that lazy-loads the next batch of 8.
+- **Static gallery on Cloudflare (Workers static assets):** a continuous vertical scroll of full-width landscape posters that lazy-loads the next batch of 8.
 - **Build-time ingest pipeline:** for each new image, reject it with a clear error if its aspect ratio is below 1.2, assign a permanent ID and publish date in a manifest file, extract keywords from the filename, run OCR, generate WebP variants at 2–3 widths, and write everything to a static JSON search index.
 - **OCR correction file:** an optional hand-edited plain-text file per poster that replaces its OCR output in the index.
 - **Always-visible search bar:** client-side full-text search over filenames and OCR text, with results filtering the scroll in place.
@@ -48,7 +48,7 @@ Curious Shit is a single-curator gallery. Only the owner publishes posters; visi
 
 ## Technical Constraints
 
-- **Hosting:** Cloudflare Pages serves all HTML, JS, images and the search index; a single Worker is the only server-side code.
+- **Hosting:** Cloudflare Workers static assets (the successor to Pages) serves all HTML, JS, images and the search index with no script; a single reactions Worker is the only server-side code.
 - **Data:** D1 (SQLite) holds only reactions, keyed by image ID, emoji and Firebase user ID with a unique constraint. Poster content and OCR text are never stored in D1.
 - **OCR runs at build time** (Tesseract or similar) in CI or on the owner's machine, never in the browser or the Worker.
 - **Auth:** Firebase Auth issues identities, and the Worker verifies ID tokens against Google's public keys. No user data is stored beyond the Firebase UID.

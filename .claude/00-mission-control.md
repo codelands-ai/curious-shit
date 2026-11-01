@@ -38,7 +38,8 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-01 | If `index.json` fails to load, the search status shows "Search is closed for a moment. Shit happens." and the feed stays | Matches the feed's error line; specs had no search error state |
 | 2026-11-01 | Deploys upload `dist/` from the owner's machine with Wrangler; Cloudflare doesn't build from GitHub | Tesseract and the generated images exist only locally |
 | 2026-11-01 | `npm run deploy` commits new posters and the manifest and pushes them straight to `main` after a successful upload | Keeps publishing to one command and never loses poster IDs. Code still goes through PRs; only `posters/` and `data/manifest.json` skip review |
-| 2026-11-01 | Pages project `curious-shit` on the free `pages.dev` address; custom domain later | Owner's choice |
+| 2026-11-01 | Site name `curious-shit` on the free Cloudflare address; custom domain later | Owner's choice |
+| 2026-11-01 | Host as Workers static assets (`wrangler deploy`, `workers.dev` address) instead of classic Pages | Wrangler 4.156 redirects Pages project creation to Workers and calls classic Pages "the previous version". Static assets with no script still keep the reactions Worker the only server-side code |
 | 2026-11-01 | `.claude/PRD.md` is the only PRD; the claude.ai shared copy is dropped and no longer maintained | The repo file is versioned and read by every session; one copy can't drift |
 
 ## Plan
@@ -53,7 +54,7 @@ Each phase ends with something that can be seen or tested. Phases and steps are 
 | 1 | Ingest pipeline | done | One command turns `posters/` into WebP variants, a manifest and a search index |
 | 2 | Static gallery | done | Infinite scroll of posters styled to the design standard, running locally |
 | 3 | Search | done | Pinned search bar filtering the feed by filename and OCR text |
-| 4 | First deploy | in progress | Gallery and search live on Cloudflare Pages |
+| 4 | First deploy | in progress | Gallery and search live on Cloudflare (Workers static assets) |
 | 5 | Sign-in | proposed | Firebase Auth with Google and email magic link |
 | 6 | Reactions | proposed | Worker + D1 endpoint, reaction bar wired up, rate limiting |
 | 7 | Launch readiness | proposed | Privacy page, graceful degradation, success criteria checked |
@@ -155,13 +156,13 @@ curious-shit/
 | --- | --- | --- | --- | --- |
 | 4.1 | Cloudflare account | Owner | Free plan at dash.cloudflare.com/sign-up. | confirmed |
 | 4.2 | Connect Wrangler | Owner | `! npx wrangler login` in Claude Code; approve in the browser. | confirmed |
-| 4.3 | Create the Pages project | Claude | `wrangler pages project create curious-shit --production-branch main`; root `wrangler.toml` with the project name and `dist/` as output. | confirmed |
-| 4.4 | Caching rules | Claude | `public/_headers`: poster images and build assets cached for a year (names carry a hash); `feed.json` and `index.json` always revalidated; basic security headers. | confirmed |
-| 4.5 | `npm run deploy` | Claude | Requires `main`, in sync with `origin/main`, with no uncommitted changes outside `posters/` and `data/manifest.json`. Runs ingest, type-check and build, uploads, then commits and pushes poster changes. Prints the URL and total time. | confirmed |
-| 4.6 | Preview deploys | Claude | `npm run deploy:preview` uploads the current branch to a preview URL; never commits or touches production. | confirmed |
+| 4.3 | Cloudflare config | Claude | Root `wrangler.toml`: Worker `curious-shit` with `[assets] directory = "./dist"`, no script, `workers.dev` and preview URLs on. The Worker is created by the first production deploy. (Changed from a classic Pages project; see Decisions.) | done |
+| 4.4 | Caching rules | Claude | `public/_headers`: poster images and build assets cached for a year (names carry a hash); `feed.json` and `index.json` always revalidated; basic security headers. | done |
+| 4.5 | `npm run deploy` | Claude | Requires `main`, in sync with `origin/main`, with no uncommitted changes outside `posters/` and `data/manifest.json`. Runs ingest, type-check and build, uploads, then commits and pushes poster changes. Prints the URL and total time. | done |
+| 4.6 | Preview deploys | Claude | `npm run deploy:preview` runs `wrangler versions upload --preview-alias <branch>`: a preview URL for the branch that never touches production or commits. Needs the Worker to exist, so only works after the first production deploy. | done |
 | 4.7 | Live check | Claude | Feed, search, `?q=` and cache headers on the live site; Lighthouse mobile LCP under 2.5s; time a new-poster deploy against 5 minutes. | confirmed |
 
-**Done when:** the site is live on `pages.dev`, search works there, mobile Lighthouse LCP is under 2.5s, and a new poster goes from `posters/` to live in under 5 minutes.
+**Done when:** the site is live on `workers.dev`, search works there, mobile Lighthouse LCP is under 2.5s, and a new poster goes from `posters/` to live in under 5 minutes.
 
 ## Environment
 
