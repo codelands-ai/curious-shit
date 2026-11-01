@@ -17,7 +17,8 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-01 | Mission control tracker | PR #2 |
 | 2026-11-01 | Phase 0: folder layout, Vite + TypeScript toolchain, shared reactions, design tokens, blank page | PR #3 |
 | 2026-11-01 | Phase 1: `npm run ingest` builds the manifest, WebP variants and index; OCR verified on the three sample posters | PR #4 |
-| 2026-11-01 | Phase 2: looping gallery feed with batching, entrance motion, picture lights and the feed error line | `phase-2-static-gallery` |
+| 2026-11-01 | Phase 2: looping gallery feed with batching, entrance motion, picture lights and the feed error line | PR #5 |
+| 2026-11-01 | Phase 3: MiniSearch search bar with results, clearing, `?q=` links, error line, speed and accuracy checks | `phase-3-search` |
 
 ## Decisions
 
@@ -31,6 +32,10 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-01 | Ingest writes a slim `feed.json` for the gallery; the full `index.json` with OCR text loads only for search | About 5 MB of OCR text at 1,000 posters would blow the 2.5s LCP target |
 | 2026-11-01 | Feed load failure shows "The gallery is closed for a moment. Shit happens." | Owner's wording; the specs had no error state for the feed |
 | 2026-11-01 | Fonts stay on Google Fonts until phase 7 | They don't block the first poster; self-hosting can wait |
+| 2026-11-01 | Search uses MiniSearch, built in the browser from `index.json` | Works directly on the existing JSON; one small library. Pagefind's partial loading only pays off at far larger collections |
+| 2026-11-01 | Search terms go in the URL (`?q=`) as part of phase 3 | A Should-Have, but small; makes searches shareable |
+| 2026-11-01 | No-results line: "Can't find any curious shit. Try something else." | Owner's wording |
+| 2026-11-01 | If `index.json` fails to load, the search status shows "Search is closed for a moment. Shit happens." and the feed stays | Matches the feed's error line; specs had no search error state |
 | 2026-11-01 | `.claude/PRD.md` is the only PRD; the claude.ai shared copy is dropped and no longer maintained | The repo file is versioned and read by every session; one copy can't drift |
 
 ## Plan
@@ -44,7 +49,7 @@ Each phase ends with something that can be seen or tested. Phases and steps are 
 | 0 | Project setup | done | Folder layout and toolchain ready, dev server running |
 | 1 | Ingest pipeline | done | One command turns `posters/` into WebP variants, a manifest and a search index |
 | 2 | Static gallery | done | Infinite scroll of posters styled to the design standard, running locally |
-| 3 | Search | proposed | Pinned search bar filtering the feed by filename and OCR text |
+| 3 | Search | done | Pinned search bar filtering the feed by filename and OCR text |
 | 4 | First deploy | proposed | Gallery and search live on Cloudflare Pages |
 | 5 | Sign-in | proposed | Firebase Auth with Google and email magic link |
 | 6 | Reactions | proposed | Worker + D1 endpoint, reaction bar wired up, rate limiting |
@@ -120,6 +125,27 @@ curious-shit/
 
 **Verified 2026-11-01** in headless Chromium: gutters 16/32/64px, exhibit gaps 64/96/128px, space above the first exhibit 32/48/64px and title size 16/20/20px at 375/800/1440px; zero layout shift on load and over 48 cards of normal-speed scrolling; feed loops in order; first card shows at full opacity, later cards light up when 15% visible; reduced motion leaves cards at full opacity with no transform and a still dot; a failing `feed.json` shows the error line.
 
+### Phase 3: Search (done 2026-11-01)
+
+| # | Step | Detail | Status |
+| --- | --- | --- | --- |
+| 3.1 | Search library | MiniSearch over title, keywords and OCR text; title and keywords weighted higher; prefix matching and small-typo tolerance for OCR misreads. Shared config in `shared/search.ts`. | done |
+| 3.2 | Index loading | `index.json` loads on first focus or input, never on page load. A query typed before it arrives runs when it's ready. | done |
+| 3.3 | Search bar | 40px input centered in the strip, max 560px wide, max 100 characters, placeholder "Search every word on every wall", clear button when there's text. Below 768px the wordmark hides. Border goes brass on focus. | done |
+| 3.4 | Results | 150ms after typing stops: feed fades out, page jumps to top, results fade in, in batches of 8, no looping, no entrance animation. Result status "N exhibits". | done |
+| 3.5 | Ends of the list | End of results: "You've reached the back wall." No matches: "Can't find any curious shit. Try something else." | done |
+| 3.6 | Clearing | Clear button, Escape or an empty box returns the full looping feed with the same fade. | done |
+| 3.7 | URL | The query is kept in `?q=` (replaced, not pushed, so typing doesn't flood history). Opening a `?q=` link runs the search. | done |
+| 3.8 | Speed check | `npm run bench:search`: 1,000 synthetic posters of 5,000 characters; every search under 200ms. | done |
+| 3.9 | Accuracy check | 10 distinct words read by eye off each sample poster; search must return the right poster. | done |
+
+**Done when:** searching any word read off a sample poster finds it, the 1,000-poster benchmark stays under 200ms, and clearing returns the endless feed.
+
+**Verified 2026-11-01:**
+- Accuracy: 30 of 30 words read by eye (10 per poster, mostly small body text) return the right poster as the only result, including "Pleistocene", which OCR misread as "Pieistocene".
+- Speed: slowest of 160 benchmark searches 11ms (target 200ms). A 100-character query is the slowest case.
+- In headless Chromium: `index.json` and MiniSearch load only on first focus; results, "N exhibits", back-wall and no-results lines, Escape, clear button, `?q=` links and the index-failure line all work; below 768px the wordmark hides and the input fills the strip with a 44px clear button.
+
 ## Environment
 
 Checked 2026-11-01 on the owner's machine (WSL2, Linux):
@@ -144,6 +170,9 @@ Checked 2026-11-01 on the owner's machine (WSL2, Linux):
 - The feed never removes cards, so a very long scroll keeps growing the page. Fine for now; revisit if memory becomes a problem on phones.
 - Scrolling very fast (thousands of pixels at once) can catch the loading dot on screen as a batch is added, which counts as layout shift. Normal scrolling causes none.
 - Below 768px the spec hides the wordmark to make room for the search input; that rule arrives with the input in phase 3.
+- At 1,000 posters, `index.json` is about 5 MB (2.6 MB gzipped for random text; real text compresses better) and building the search index takes about 0.8s on the owner's machine, likely 2–4s on a phone. This happens once, on the first search. If it's too slow, ingest can pre-build the MiniSearch index (`toJSON`/`loadJSON`) or the build can move to a Web Worker.
+- The focused search box shows both the brass border (design standard, Search) and the standard brass focus outline (design standard, Focus), which reads as a double ring. Both rules were followed as written; drop one if it looks heavy.
+- Very common words (e.g. "the") match every poster. That's expected; results are ranked, not filtered further.
 - Fonts load from Google Fonts at runtime, so the page needs network access to show the right typefaces.
 - Cloudflare and Firebase accounts and projects have to be created by the owner; Claude can't sign up for them. Deferred to phase 4 (Cloudflare) and phase 5 (Firebase), when they're first needed.
 - Generated images aren't committed, so a fresh clone must run `npm run ingest` before `npm run dev` shows posters.
