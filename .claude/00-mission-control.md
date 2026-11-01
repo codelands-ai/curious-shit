@@ -14,6 +14,8 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | --- | --- | --- |
 | 2026-11-01 | Vibe sentence, PRD, content model with gap decisions, design standard | `.claude/`, PR #1 |
 | 2026-11-01 | CLAUDE.md, `.gitignore` for Node/Cloudflare/Firebase, Claude attribution turned off | PR #1 (merged manually by owner) |
+| 2026-11-01 | Mission control tracker | PR #2 |
+| 2026-11-01 | Phase 0: folder layout, Vite + TypeScript toolchain, shared reactions, design tokens, blank page | `phase-0-project-setup` |
 
 ## Decisions
 
@@ -33,7 +35,7 @@ Each phase ends with something that can be seen or tested. Phases and steps are 
 
 | # | Phase | Status | Outcome |
 | --- | --- | --- | --- |
-| 0 | Project setup | confirmed | Folder layout and toolchain ready, dev server running |
+| 0 | Project setup | done | Folder layout and toolchain ready, dev server running |
 | 1 | Ingest pipeline | proposed | One command turns `posters/` into WebP variants, a manifest and a search index |
 | 2 | Static gallery | proposed | Infinite scroll of posters styled to the design standard, running locally |
 | 3 | Search | proposed | Pinned search bar filtering the feed by filename and OCR text |
@@ -44,7 +46,7 @@ Each phase ends with something that can be seen or tested. Phases and steps are 
 
 Detailed steps for each phase get added below as they're confirmed.
 
-### Phase 0: Project setup (confirmed 2026-11-01)
+### Phase 0: Project setup (done 2026-11-01)
 
 **Folder layout**
 
@@ -65,13 +67,13 @@ curious-shit/
 | # | Step | Who | Status |
 | --- | --- | --- | --- |
 | 0.1 | Install Tesseract: `sudo apt install -y tesseract-ocr` | Owner (needs sudo) | done |
-| 0.2 | Move the three sample posters into `posters/` | Claude | confirmed |
-| 0.3 | Create `package.json`, `tsconfig.json` and Vite config; install `typescript`, `vite`, `tsx`, `sharp`, `wrangler` as dev dependencies | Claude | confirmed |
-| 0.4 | Create the folder layout with placeholder files | Claude | confirmed |
-| 0.5 | Write `shared/reactions.ts` with the six reactions | Claude | confirmed |
-| 0.6 | Write `src/styles/tokens.css` from the design standard's token block, plus a blank page using it | Claude | confirmed |
-| 0.7 | Add `public/generated/` to `.gitignore` | Claude | confirmed |
-| 0.8 | npm scripts: `dev`, `ingest`, `build`, `deploy` (ingest and deploy as stubs until their phases) | Claude | confirmed |
+| 0.2 | Move the three sample posters into `posters/` | Claude | done |
+| 0.3 | Create `package.json`, `tsconfig.json` and Vite config; install `typescript`, `vite`, `tsx`, `sharp`, `wrangler` as dev dependencies | Claude | done |
+| 0.4 | Create the folder layout with placeholder files | Claude | done |
+| 0.5 | Write `shared/reactions.ts` with the six reactions | Claude | done |
+| 0.6 | Write `src/styles/tokens.css` from the design standard's token block, plus a blank page using it | Claude | done |
+| 0.7 | Add `public/generated/` to `.gitignore` | Claude | done |
+| 0.8 | npm scripts: `dev`, `ingest`, `build`, `deploy` (ingest and deploy as stubs until their phases) | Claude | done |
 
 **Done when:** `tesseract --version` works, and `npm run dev` serves a blank dark page that uses the design tokens.
 
@@ -106,12 +108,12 @@ Checked 2026-11-01 on the owner's machine (WSL2, Linux):
 | Firebase CLI | 15.29.0 |
 | Tesseract | 5.5.0 (eng, osd) |
 | cwebp | not installed (not needed: `sharp` makes the WebP files) |
-| Wrangler | not installed (will be a project dev dependency) |
+| Wrangler | project dev dependency (`npx wrangler`) |
 
 ## Caveats and open issues
 
-- The three sample posters sit in the repo root and need to move to the posters folder once phase 1 defines it.
-- The `initial-checkin` branch is merged but not deleted, locally or on GitHub.
+- The `initial-checkin` and `create-mission-control` branches are merged but still exist on GitHub (`initial-checkin` also locally).
+- Fonts load from Google Fonts at runtime, so the page needs network access to show the right typefaces.
 - Cloudflare and Firebase accounts and projects have to be created by the owner; Claude can't sign up for them. Deferred to phase 4 (Cloudflare) and phase 5 (Firebase), when they're first needed.
 - Generated images aren't committed, so a fresh clone must run `npm run ingest` before `npm run dev` shows posters.
 - Titles built from filenames lose punctuation: `resurrection-overview-jehovahs-witness-vs-seventh-day-adventist` becomes "Resurrection Overview Jehovahs Witness Vs Seventh Day Adventist". Proper titles need the sidecar metadata file (a Should-Have) or careful filenames.
