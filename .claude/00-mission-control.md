@@ -16,7 +16,8 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-01 | CLAUDE.md, `.gitignore` for Node/Cloudflare/Firebase, Claude attribution turned off | PR #1 (merged manually by owner) |
 | 2026-11-01 | Mission control tracker | PR #2 |
 | 2026-11-01 | Phase 0: folder layout, Vite + TypeScript toolchain, shared reactions, design tokens, blank page | PR #3 |
-| 2026-11-01 | Phase 1: `npm run ingest` builds the manifest, WebP variants and index; OCR verified on the three sample posters | `phase-1-ingest-pipeline` |
+| 2026-11-01 | Phase 1: `npm run ingest` builds the manifest, WebP variants and index; OCR verified on the three sample posters | PR #4 |
+| 2026-11-01 | Phase 2: looping gallery feed with batching, entrance motion, picture lights and the feed error line | `phase-2-static-gallery` |
 
 ## Decisions
 
@@ -27,6 +28,9 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-01 | OCR with native Tesseract installed locally, not tesseract.js | Faster and more accurate, which serves the 90% search target |
 | 2026-11-01 | The build runs on the owner's machine, not in CI | Keeps "one command, live in 5 minutes" simple; CI can come later |
 | 2026-11-01 | Added a seventh reaction: `shit` 💩 | Owner request, before phase 0 merged; it fits the site's name |
+| 2026-11-01 | Ingest writes a slim `feed.json` for the gallery; the full `index.json` with OCR text loads only for search | About 5 MB of OCR text at 1,000 posters would blow the 2.5s LCP target |
+| 2026-11-01 | Feed load failure shows "The gallery is closed for a moment. Shit happens." | Owner's wording; the specs had no error state for the feed |
+| 2026-11-01 | Fonts stay on Google Fonts until phase 7 | They don't block the first poster; self-hosting can wait |
 | 2026-11-01 | `.claude/PRD.md` is the only PRD; the claude.ai shared copy is dropped and no longer maintained | The repo file is versioned and read by every session; one copy can't drift |
 
 ## Plan
@@ -39,7 +43,7 @@ Each phase ends with something that can be seen or tested. Phases and steps are 
 | --- | --- | --- | --- |
 | 0 | Project setup | done | Folder layout and toolchain ready, dev server running |
 | 1 | Ingest pipeline | done | One command turns `posters/` into WebP variants, a manifest and a search index |
-| 2 | Static gallery | proposed | Infinite scroll of posters styled to the design standard, running locally |
+| 2 | Static gallery | done | Infinite scroll of posters styled to the design standard, running locally |
 | 3 | Search | proposed | Pinned search bar filtering the feed by filename and OCR text |
 | 4 | First deploy | proposed | Gallery and search live on Cloudflare Pages |
 | 5 | Sign-in | proposed | Firebase Auth with Google and email magic link |
@@ -91,13 +95,30 @@ curious-shit/
 | 1.4 | Retire | A manifest entry whose file is gone gets `removed: true` and drops out of the index. The entry stays so its ID is never reused. | done |
 | 1.5 | OCR | Use `posters/<name>.ocr.txt` if it exists. Otherwise use the cached result in `.cache/ocr/<hash>.txt`. Otherwise run Tesseract (`-l eng`) on a grayscale copy upscaled to at least 3000px wide, since poster text is often small. Collapse whitespace, drop tokens with no letters or digits, cap at 5,000 characters. | done |
 | 1.6 | Title and keywords | Title: filename with hyphens and underscores as spaces, title-cased, 80 characters max. Keywords: lowercase filename words minus stop words. | done |
-| 1.7 | Images | `sharp` writes WebP (quality 80) at 800, 1600 and 2400px wide to `public/generated/posters/<id>-<hash8>-<width>.webp`, skipping widths larger than the original (at least one variant is always written) and files that already exist. The hash in the name lets the CDN cache images forever and gives a replaced poster new URLs. Files no longer referenced are deleted. | done |
+| 1.7 | Images | `sharp` writes WebP (quality 80) at 800, 1600 and 2400px wide to `public/generated/posters/<id>-<hash8>-<width>.webp`, plus the original width when it's below 2400 (never upscaled; changed in phase 2 so 1536px originals aren't served at 800px on desktop) and files that already exist. The hash in the name lets the CDN cache images forever and gives a replaced poster new URLs. Files no longer referenced are deleted. | done |
 | 1.8 | Index | Write `public/generated/index.json` as `{ posters: [...] }`: every non-removed Poster record (content model fields; `src` is a list of `{ width, url }`), newest first, ties by ID. Files are only rewritten when their contents change. The search-library index format is decided in phase 3. | done |
 | 1.9 | Report | Print counts: new, renamed, replaced, restored, removed, unchanged; OCR from correction files, cache and Tesseract; images written; total time. | done |
 
 **Done when:** on the three sample posters, `npm run ingest` produces the manifest, the WebP files and an index with OCR text; a second run changes nothing; renaming a poster keeps its ID.
 
 **Verified 2026-11-01:** first run 2.4s with OCR on all three; second run changes no files; rename keeps the ID and updates the title; removal retires the entry and deletes its images; putting the file back restores the original manifest and index exactly; a correction file overrides OCR; a square image fails the run with the manifest untouched.
+
+### Phase 2: Static gallery (done 2026-11-01)
+
+| # | Step | Detail | Status |
+| --- | --- | --- | --- |
+| 2.1 | Slim feed file | Ingest also writes `public/generated/feed.json`: `id`, `title`, `src`, `width`, `height`, `added_at`, newest first. OCR text stays in `index.json`, loaded only by search (phase 3). | done |
+| 2.2 | Page shell | 64px glass search-bar strip pinned to the top with the wordmark at the left gutter; feed below with the standard spacing. Room is left for the search input (phase 3) and `auth_control` (phase 5). | done |
+| 2.3 | Poster card | `<figure>` with the image and placard title. `srcset` from `src`, `sizes` matching the layout, `width`/`height` set, alt = title. `--plinth` placeholder at the exact aspect ratio, poster shadow, picture light. | done |
+| 2.4 | Batching | Render 8 cards at a time; when the bottom comes within about one screen, add the next 8. The brass loading dot sits at the bottom. First card eager with high fetch priority, the rest lazy. | done |
+| 2.5 | Looping | After the last poster the feed starts again from the newest. Repeats are new elements and get the entrance animation. | done |
+| 2.6 | Motion | Entrance at 15% visible (image fades and rises; picture light fades up 100ms later); first poster skips it; picture light brightens on hover; reduced motion means opacity only. | done |
+| 2.7 | Error state | If `feed.json` fails to load, show "The gallery is closed for a moment. Shit happens." in the feed status style. | done |
+| 2.8 | Responsive check | Gutters, gaps and title size at 375, 800 and 1440px. | done |
+
+**Done when:** with the three sample posters, the page scrolls endlessly with no layout shift, the first poster appears without animation, and nothing moves under reduced motion.
+
+**Verified 2026-11-01** in headless Chromium: gutters 16/32/64px, exhibit gaps 64/96/128px, space above the first exhibit 32/48/64px and title size 16/20/20px at 375/800/1440px; zero layout shift on load and over 48 cards of normal-speed scrolling; feed loops in order; first card shows at full opacity, later cards light up when 15% visible; reduced motion leaves cards at full opacity with no transform and a still dot; a failing `feed.json` shows the error line.
 
 ## Environment
 
@@ -119,7 +140,10 @@ Checked 2026-11-01 on the owner's machine (WSL2, Linux):
 - The `initial-checkin` and `create-mission-control` branches are merged but still exist on GitHub (`initial-checkin` also locally).
 - Renaming a poster and editing its contents in the same run makes it look new: it gets a new ID and the old entry is retired, so its reactions are orphaned. Rename and edit in separate runs.
 - A correction file must be renamed along with its poster (`<name>.ocr.txt` follows the image's filename).
-- The sample posters are only 1536–1672px wide, so they get an 800px variant (and 1600px for the gnostic poster) but no 2400px one.
+- The sample posters are only 1536–1672px wide, so on high-density desktop screens they show at their native width, slightly soft. Larger originals (2400px+) fix that.
+- The feed never removes cards, so a very long scroll keeps growing the page. Fine for now; revisit if memory becomes a problem on phones.
+- Scrolling very fast (thousands of pixels at once) can catch the loading dot on screen as a batch is added, which counts as layout shift. Normal scrolling causes none.
+- Below 768px the spec hides the wordmark to make room for the search input; that rule arrives with the input in phase 3.
 - Fonts load from Google Fonts at runtime, so the page needs network access to show the right typefaces.
 - Cloudflare and Firebase accounts and projects have to be created by the owner; Claude can't sign up for them. Deferred to phase 4 (Cloudflare) and phase 5 (Firebase), when they're first needed.
 - Generated images aren't committed, so a fresh clone must run `npm run ingest` before `npm run dev` shows posters.

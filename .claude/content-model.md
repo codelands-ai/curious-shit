@@ -49,6 +49,7 @@ The search fields `ocr_text` and `keywords` never appear on the card; they live 
 | `loading` | Shown while the next batch loads | Quiet animation, no text. |
 | `end_of_feed` | Shown when a search runs out of results | One wry line, e.g. "You've reached the back wall." 50 characters max. The unfiltered feed loops, so it never shows there. |
 | `no_results` | Shown when a search finds nothing | One line plus a suggestion. 80 characters max. |
+| `feed_unavailable` | Shown in place of the feed when the poster list can't be loaded | "The gallery is closed for a moment. Shit happens." |
 
 ## 5. Sign-in dialog
 
