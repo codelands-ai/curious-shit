@@ -7,11 +7,10 @@ import type { FirebaseOptions } from "firebase/app";
 export const AUTH_EMULATOR_URL: string | undefined = import.meta.env.VITE_AUTH_EMULATOR;
 
 const production: FirebaseOptions = {
-  // Filled in by phase 5.3 (firebase apps:sdkconfig).
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  appId: "",
+  apiKey: "AIzaSyARLGKUJJUk2sT7nZBu4ceEiUng-xBcbd8",
+  authDomain: "curious-shit.firebaseapp.com",
+  projectId: "curious-shit",
+  appId: "1:742779553729:web:75c3f4d22c461254909140",
 };
 
 const emulator: FirebaseOptions = {
