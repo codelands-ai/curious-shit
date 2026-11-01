@@ -1,13 +1,12 @@
-// Publish the site to Cloudflare Pages.
+// Publish the site to Cloudflare (Workers static assets, configured in wrangler.toml).
 //
 //   npm run deploy           production, from main; commits and pushes new posters afterwards
-//   npm run deploy:preview   the current branch to a preview URL; never commits
+//   npm run deploy:preview   uploads the current branch as a preview version; production is untouched
 //
 // See .claude/00-mission-control.md, phase 4.
 
 import { spawn, spawnSync } from "node:child_process";
 
-const PROJECT = "curious-shit";
 const PRODUCTION_BRANCH = "main";
 // Paths a production deploy may find changed: they're what publishing a poster changes.
 const PUBLISHABLE = (path: string) => path.startsWith("posters/") || path === "data/manifest.json";
@@ -31,7 +30,7 @@ function main(): Promise<void> | void {
   run("npx", ["vite", "build", "--logLevel", "warn"]);
 
   step(preview ? `Upload preview of ${branch}` : "Upload to production");
-  return upload(preview ? branch : PRODUCTION_BRANCH).then((url) => {
+  return upload(preview ? branch : null).then((url) => {
     if (preview) {
       if (publishableChanges().length > 0) {
         console.log("\nNote: posters or the manifest changed locally. They'll be committed when you deploy from main.");
@@ -79,13 +78,13 @@ function checkProductionTree(branch: string): void {
 
 // ---------- Upload ----------
 
-function upload(branch: string): Promise<string> {
+/** Production deploy when previewBranch is null; otherwise a preview version aliased to the branch. */
+function upload(previewBranch: string | null): Promise<string> {
+  const args = previewBranch
+    ? ["wrangler", "versions", "upload", "--preview-alias", previewAlias(previewBranch), "--message", `Preview of ${previewBranch}`]
+    : ["wrangler", "deploy", "--message", `Deploy ${git("rev-parse", "--short", "HEAD")}`];
   return new Promise((resolve, reject) => {
-    const child = spawn(
-      "npx",
-      ["wrangler", "pages", "deploy", "dist", "--project-name", PROJECT, "--branch", branch, "--commit-dirty=true"],
-      { stdio: ["inherit", "pipe", "pipe"] },
-    );
+    const child = spawn("npx", args, { stdio: ["inherit", "pipe", "pipe"] });
     let output = "";
     const tee = (chunk: Buffer, to: NodeJS.WriteStream) => {
       output += chunk.toString();
@@ -95,13 +94,18 @@ function upload(branch: string): Promise<string> {
     child.stderr.on("data", (c: Buffer) => tee(c, process.stderr));
     child.on("error", reject);
     child.on("close", (code) => {
-      if (code !== 0) return reject(new Error(`wrangler pages deploy exited with ${code}`));
-      const urls = output.match(/https:\/\/[\w.-]+\.pages\.dev/g) ?? [];
-      // Wrangler prints the unique deployment URL; production is also served at the project's own address.
-      const url = preview ? (urls[urls.length - 1] ?? "(see Wrangler output)") : `https://${PROJECT}.pages.dev`;
-      resolve(url);
+      if (code !== 0) return reject(new Error(`wrangler ${args[1]} exited with ${code}`));
+      const urls = output.match(/https:\/\/[\w.-]+\.workers\.dev/g) ?? [];
+      // A preview upload prints the version URL, then the alias URL; prefer the alias.
+      const alias = previewBranch ? urls.find((u) => u.includes(`//${previewAlias(previewBranch)}-`)) : undefined;
+      resolve(alias ?? urls[0] ?? "(see Wrangler output above)");
     });
   });
+}
+
+// Preview aliases become part of a hostname: lowercase letters, digits and hyphens.
+function previewAlias(branch: string): string {
+  return branch.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "preview";
 }
 
 // ---------- Commit published posters ----------
