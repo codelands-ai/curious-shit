@@ -27,6 +27,6 @@ Hard rules:
 
 These are the source of truth. Follow them, and update them when a decision changes.
 
-- `.claude/PRD.md`: vision, personas, prioritized features, success criteria. Live version: https://claude.ai/artifact/93uDkxQHT25FBAzsKhvTKm
+- `.claude/PRD.md`: vision, personas, prioritized features, success criteria. This file is authoritative; the claude.ai copy (https://claude.ai/artifact/93uDkxQHT25FBAzsKhvTKm) is for sharing only and may lag behind.
 - `.claude/content-model.md`: page sections, fields, data records and their constraints.
 - `.claude/design-standard.md`: colors, type, spacing, texture, motion, and the CSS tokens. Use the tokens; never hard-code visual values.
