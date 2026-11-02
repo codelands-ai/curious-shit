@@ -1,0 +1,34 @@
+/* Privacy page: long-form text. Design standard section 2. */
+
+.strip--simple {
+  grid-template-columns: 1fr;
+}
+
+.wordmark--link {
+  display: block;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.prose {
+  max-width: 65ch;
+  margin: 0 auto;
+  padding: var(--first-exhibit-gap) var(--gutter) var(--space-24);
+}
+
+.prose h1 {
+  margin: 0 0 var(--space-8);
+  font: 600 var(--fs-h1) / 1.15 var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+.prose h2 {
+  margin: var(--space-12) 0 var(--space-4);
+  font: 600 var(--fs-h2) / 1.15 var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+.prose p {
+  margin: 0 0 var(--space-4);
+  color: var(--text-primary);
+}

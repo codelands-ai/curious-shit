@@ -20,6 +20,7 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-01 | Phase 2: looping gallery feed with batching, entrance motion, picture lights and the feed error line | PR #5 |
 | 2026-11-01 | Phase 3: MiniSearch search bar with results, clearing, `?q=` links, error line, speed and accuracy checks | PR #6 |
 | 2026-11-01 | Phase 4: Cloudflare config, caching headers, `npm run deploy` / `deploy:preview`, first production deploy, mobile LCP fixes | PR #7 |
+| 2026-11-01 | Phase 5: Firebase sign-in (Google popup, email link), auth control and dialog, privacy page | `phase-5-sign-in` |
 | 2026-11-01 | First poster published with `npm run deploy`: `jacob-esau.webp`, live and searchable in 12s | commit `98a8732` |
 
 ## Decisions
@@ -44,6 +45,14 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-01 | Host as Workers static assets (`wrangler deploy`, `workers.dev` address) instead of classic Pages | Wrangler 4.156 redirects Pages project creation to Workers and calls classic Pages "the previous version". Static assets with no script still keep the reactions Worker the only server-side code |
 | 2026-11-01 | First production deploy ran once from `phase-4-first-deploy` with plain `wrangler deploy` | Previews need the Worker to exist; owner chose to go live before merging so live checks could be done in the PR |
 | 2026-11-01 | The build writes the newest poster's card into `index.html`, preloads its image and `feed.json`, loads fonts without blocking paint, and gives later posters low fetch priority | Mobile Lighthouse LCP was 2.6–2.8s with the card built by JavaScript; median is now 1.64s |
+| 2026-11-01 | Firebase Auth code loads only on "Sign in to react", for returning signed-in visitors after the first paint, or when opening an email link | Keeps the SDK off the critical path for first-time visitors and the LCP target |
+| 2026-11-01 | Google sign-in uses a popup, not a redirect | Redirect sign-in breaks in browsers that block third-party storage when the site isn't on the Firebase auth domain |
+| 2026-11-01 | Sign-in dialog heading "Sign in to react"; privacy note "We keep only an anonymous ID. Your email stays with Google's Firebase." | Owner approved |
+| 2026-11-01 | Signed-in control shows the user's initial, not their Google photo | Owner's choice: no extra download, quieter |
+| 2026-11-01 | Privacy page moves from phase 7 to phase 5 | The sign-in dialog links to it |
+| 2026-11-01 | Stay on Spark and accept 5 email-link sign-in emails per day; when the cap is hit the dialog says so and suggests Google | Verified on firebase.google.com/docs/auth/limits (updated 2026-10-20): "Email link sign-in emails 5 emails/day" on Spark, 25,000 on Blaze, "Please add a billing instrument to go beyond 5". Signed-in visitors stay signed in, so only new email sign-ins count. Revisit if it bites |
+| 2026-11-01 | The Auth emulator runs through `npx firebase-tools@15.29.0` (`npm run emulators`, `npm run dev:emulator`) | The global `firebase` is the Windows install under WSL and hangs at prompts |
+| 2026-11-01 | Privacy page contact for deletion requests: willt@codelands.ai | Owner's choice |
 | 2026-11-01 | `.claude/PRD.md` is the only PRD; the claude.ai shared copy is dropped and no longer maintained | The repo file is versioned and read by every session; one copy can't drift |
 
 ## Plan
@@ -59,9 +68,9 @@ Each phase ends with something that can be seen or tested. Phases and steps are 
 | 2 | Static gallery | done | Infinite scroll of posters styled to the design standard, running locally |
 | 3 | Search | done | Pinned search bar filtering the feed by filename and OCR text |
 | 4 | First deploy | done | Gallery and search live on Cloudflare (Workers static assets) |
-| 5 | Sign-in | proposed | Firebase Auth with Google and email magic link |
+| 5 | Sign-in | done | Firebase Auth with Google and email magic link |
 | 6 | Reactions | proposed | Worker + D1 endpoint, reaction bar wired up, rate limiting |
-| 7 | Launch readiness | proposed | Privacy page, graceful degradation, success criteria checked |
+| 7 | Launch readiness | proposed | Graceful degradation, success criteria checked (privacy page moved to phase 5) |
 
 Detailed steps for each phase get added below as they're confirmed.
 
@@ -176,6 +185,29 @@ curious-shit/
 - Mobile Lighthouse (simulated slow 4G, 4× CPU), five runs on the preview: LCP 1.59, 1.64, 1.59, 2.04, 3.12s, median **1.64s**; scores 92–100; CLS 0. The 3.12s run spent 1.9s in render delay with downloads on time, which matches local CPU contention rather than the site.
 - New-poster publish: `npm run deploy` on `main` with the owner's `jacob-esau.webp` took **12s** end to end (ingest, build, upload, commit and push as `98a8732`). OCR for this poster was already cached from preview runs; a first-time OCR adds roughly a second per poster. The poster is first in the live feed, its card is in the live HTML, and live searches for "Edomites", "birthright", "Isaac" and "impulsive" return it. This deploy also shipped the LCP fixes to production.
 
+### Phase 5: Sign-in (done 2026-11-01)
+
+| # | Step | Who | Detail | Status |
+| --- | --- | --- | --- | --- |
+| 5.1 | Firebase project | Owner | Project `curious-shit` on Spark, Analytics off; Authentication with Google and Email link (passwordless); authorized domain `curious-shit.smokeraven667.workers.dev`. | done |
+| 5.2 | Connect the CLI | Owner | Replaced: the owner pasted the web config from the console instead. The `firebase` on PATH is the Windows install, whose login a Linux CLI can't use. | done |
+| 5.3 | Web app config | Claude | Owner registered the web app; its public config is in `src/firebase-config.ts`. | done |
+| 5.4 | Lazy auth | Claude | Firebase loads on "Sign in to react", after first paint for returning signed-in visitors, or when opening an email link. If it fails, the auth control hides. | done |
+| 5.5 | Auth control | Claude | Signed out: "Sign in to react". Signed in: initial in a round button with a menu containing "Sign out". | done |
+| 5.6 | Sign-in dialog | Claude | 400px, 44px buttons, fade, Escape, focus trapped. Google popup; email link with "Check your email"; errors as an oxblood line. | done |
+| 5.7 | Email link return | Claude | Completes sign-in and cleans the URL; asks for the email again on a different device. | done |
+| 5.8 | Token for phase 6 | Claude | `getIdToken()` for the reactions client. Nothing from Firebase is stored by us. | done |
+| 5.9 | Privacy page | Claude | One short page: what's stored (Firebase UID with reactions), what Firebase holds, what third parties see. Linked from the dialog. | done |
+| 5.10 | Tests | Claude, then owner | All flows against the Firebase Auth emulator, Firebase-down behavior and first-visit Lighthouse; then the owner tries real Google and email sign-in on a preview. | done |
+
+**Done when:** the owner can sign in with Google and with an email link on the live site and sign out; Firebase failing leaves browsing and search untouched; first-visit mobile Lighthouse is no worse than phase 4.
+
+**Verified 2026-11-01:**
+- Emulator, 25/25 automated checks: first visit shows "Sign in to react" and loads no Firebase; dialog opens, Escape closes; Google popup sign-in shows the initial and closes the dialog; `getIdToken()` returns a token; returning visitors get no "Sign in" flash; sign-out; email link on the same browser signs in and cleans the URL; a reused link shows the expired message; another device asks for the email, then signs in; a simulated `QUOTA_EXCEEDED` shows the daily-cap line; Firebase unreachable shows a friendly error while search works; auth code failing to load hides the control and leaves the feed; the mobile strip fits.
+- Real project: authorized domains and the Google provider confirmed through the public config endpoint; the owner signed in with Google and with an email link on the preview.
+- First-visit cost: up-front JS 4.7 KB gzipped (was 3.2 KB); Firebase is a separate 31 KB chunk not requested on first visit.
+- Lighthouse mobile, devtools (real) throttling, five runs each: preview median 2.66s vs production (phase 4 code) 2.69s, so no regression.
+
 ## Environment
 
 Checked 2026-11-01 on the owner's machine (WSL2, Linux):
@@ -207,6 +239,10 @@ Checked 2026-11-01 on the owner's machine (WSL2, Linux):
 - Preview URLs are public to anyone who has the link.
 - `npm run deploy:preview` runs ingest, so new posters in `posters/` get IDs in the local manifest. That change stays uncommitted; the production deploy commits it.
 - A shared `?q=` link may briefly show the newest poster (written into the HTML) before the results replace it.
+- **LCP under real throttling misses the target.** Lighthouse's default simulated throttling gives about 1.6s, but devtools (applied) throttling gives a median of about 2.7s for both phase 4 and phase 5. The 141 KB first poster takes about 2s to download on throttled 4G. Phase 7 should decide which measurement counts and, if needed, add a smaller phone-sized image (lower WebP quality or a ~640px variant).
+- Firebase Spark allows 5 email-link sign-in emails a day (see Decisions). Testing email sign-in uses that quota.
+- Every preview branch needs its own Firebase authorized domain (`<branch>-curious-shit.smokeraven667.workers.dev`) for sign-in to work there.
+- On phones, "Sign in to react" shortens the search placeholder to "Search every word…".
 - Fonts load from Google Fonts at runtime, so the page needs network access to show the right typefaces.
 - Cloudflare and Firebase accounts and projects have to be created by the owner; Claude can't sign up for them. Deferred to phase 4 (Cloudflare) and phase 5 (Firebase), when they're first needed.
 - Generated images aren't committed, so a fresh clone must run `npm run ingest` before `npm run dev` shows posters.

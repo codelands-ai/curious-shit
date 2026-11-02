@@ -10,7 +10,7 @@ The page has six sections, top to bottom, fed by two data records. Only Must-Hav
 | `search_input` | Free-text query box | Up to 100 characters. Results update about 150 ms after typing stops. The query is kept in the URL as `?q=` so searches can be shared. Placeholder in the museum-placard voice, e.g. "Search every word on every wall", 40 characters max. |
 | `result_status` | Count shown while a search is active | Format: "N exhibits" ("1 exhibit"). Hidden when the box is empty. If the search index can't be loaded: "Search is closed for a moment. Shit happens." |
 | `clear_control` | Resets the feed | Icon button with an accessible label. |
-| `auth_control` | Sign-in or account button | Signed out: "Sign in to react". Signed in: avatar or initial, plus sign-out. |
+| `auth_control` | Sign-in or account button | Signed out: "Sign in to react". Signed in: the user's initial on a square fixture, opening a menu with their name or email and "Sign out". |
 
 ## 2. Gallery feed (one poster card per image)
 
@@ -55,9 +55,9 @@ The search fields `ocr_text` and `keywords` never appear on the card; they live 
 
 | Field | Description | Constraints |
 | --- | --- | --- |
-| `heading` | Dialog title | 30 characters max. |
-| `providers` | Sign-in options | Google and email magic link. |
-| `privacy_note` | What gets stored | One sentence: only an anonymous ID is kept. Links to the privacy page. |
+| `heading` | Dialog title | 30 characters max. "Sign in to react"; "Check your email" after a link is sent; "Confirm your email" when a link is opened on another device. |
+| `providers` | Sign-in options | Google (popup) and email magic link. Email links are capped at 5 a day on the free plan; past that the dialog says "Email sign-in is full for today. Try Google, or come back tomorrow." |
+| `privacy_note` | What gets stored | "We keep only an anonymous ID. Your email stays with Google's Firebase." Links to `/privacy.html`. |
 
 ## 6. Reactions-unavailable state
 

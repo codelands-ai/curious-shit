@@ -10,7 +10,8 @@ const FEED_FILE = new URL("./public/generated/feed.json", import.meta.url);
 function preloadFirstPoster(): Plugin {
   return {
     name: "preload-first-poster",
-    transformIndexHtml(html) {
+    transformIndexHtml(html, ctx) {
+      if (!ctx.path.endsWith("/index.html") && ctx.path !== "/") return html;
       if (!existsSync(FEED_FILE)) return html;
       const { posters } = JSON.parse(readFileSync(FEED_FILE, "utf8")) as { posters: FeedPoster[] };
       const first = posters[0];
@@ -48,5 +49,11 @@ export default defineConfig({
   build: {
     outDir: "../dist",
     emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        main: new URL("./src/index.html", import.meta.url).pathname,
+        privacy: new URL("./src/privacy.html", import.meta.url).pathname,
+      },
+    },
   },
 });

@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="./styles/tokens.css" />
     <link rel="stylesheet" href="./styles/base.css" />
     <link rel="stylesheet" href="./styles/gallery.css" />
+    <link rel="stylesheet" href="./styles/account.css" />
   </head>
   <body>
     <header class="strip">
@@ -39,13 +40,60 @@
           </svg>
         </button>
       </form>
-      <div class="strip__end"></div>
+      <div class="strip__end">
+        <button id="auth-signin" class="auth-button" type="button" hidden>Sign in to react</button>
+        <div id="auth-account" class="account" hidden>
+          <button id="auth-avatar" class="account__avatar" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="auth-menu">
+            <span id="auth-initial" aria-hidden="true"></span>
+            <span id="auth-label" class="visually-hidden"></span>
+          </button>
+          <div id="auth-menu" class="account__menu" role="menu" hidden>
+            <p id="auth-who" class="account__who"></p>
+            <button id="auth-signout" class="account__item" type="button" role="menuitem">Sign out</button>
+          </div>
+        </div>
+      </div>
     </header>
     <main id="hallway" class="hallway">
       <p id="result-status" class="result-status" aria-live="polite" hidden></p>
       <div id="feed" class="feed"></div>
       <div id="feed-status" class="feed-status" aria-live="polite"></div>
     </main>
+    <dialog id="signin" class="signin" aria-labelledby="signin-heading">
+      <button class="signin__close" type="button" aria-label="Close" data-close>
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+      </button>
+      <h2 id="signin-heading" class="signin__heading">Sign in to react</h2>
+
+      <div class="signin__panel" data-panel="choose">
+        <button id="signin-google" class="signin__button signin__button--primary" type="button">Continue with Google</button>
+        <p class="signin__or" aria-hidden="true"><span>or</span></p>
+        <form id="signin-email-form" class="signin__form">
+          <label class="signin__label" for="signin-email">Email</label>
+          <input id="signin-email" class="signin__input" type="email" autocomplete="email" required maxlength="254" />
+          <button class="signin__button" type="submit">Email me a sign-in link</button>
+        </form>
+      </div>
+
+      <div class="signin__panel" data-panel="sent" hidden>
+        <p class="signin__body">We sent a sign-in link to <span id="signin-sent-to" class="signin__strong"></span>. Open it on this device to finish.</p>
+        <button class="signin__button" type="button" data-close>Done</button>
+      </div>
+
+      <div class="signin__panel" data-panel="confirm" hidden>
+        <p class="signin__body">You opened the link on a different device or browser. Enter the email address it was sent to.</p>
+        <form id="signin-confirm-form" class="signin__form">
+          <label class="signin__label" for="signin-confirm-email">Email</label>
+          <input id="signin-confirm-email" class="signin__input" type="email" autocomplete="email" required maxlength="254" />
+          <button class="signin__button signin__button--primary" type="submit">Sign in</button>
+        </form>
+      </div>
+
+      <p id="signin-error" class="signin__error" role="alert" hidden></p>
+      <p class="signin__privacy">We keep only an anonymous ID. Your email stays with Google's Firebase. <a href="/privacy.html">Privacy</a></p>
+    </dialog>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>
