@@ -34,6 +34,8 @@ export class Gallery {
   constructor(
     private readonly feed: HTMLElement,
     private readonly status: HTMLElement,
+    /** Called with every batch of cards once they're in the page (reaction bars hook in here). */
+    private readonly onCards: (cards: HTMLElement[]) => void = () => {},
   ) {
     this.dot.className = "feed-status__dot";
 
@@ -79,6 +81,7 @@ export class Gallery {
     if (adopt) {
       this.next = 1 % posters.length;
       this.rendered = 1;
+      this.onCards([prerendered!]);
     } else {
       this.feed.replaceChildren();
     }
@@ -109,17 +112,20 @@ export class Gallery {
 
   private appendBatch(): void {
     const fragment = document.createDocumentFragment();
+    const cards: HTMLElement[] = [];
     for (let i = 0; i < BATCH_SIZE && this.hasMore(); i++) {
       const first = this.rendered === 0;
       const card = createCard(this.posters[this.next]!, first);
       if (!first && !this.options.entrance) card.classList.add("is-lit", "is-still");
       else if (!first) this.entrance.observe(card);
       fragment.append(card);
+      cards.push(card);
       this.next++;
       if (this.options.loop) this.next %= this.posters.length;
       this.rendered++;
     }
     this.feed.append(fragment);
+    this.onCards(cards);
 
     if (this.hasMore()) {
       this.status.replaceChildren(this.dot);

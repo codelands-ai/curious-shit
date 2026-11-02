@@ -13,7 +13,9 @@
     "emulators": "npx -y firebase-tools@15.29.0 emulators:start --only auth --project demo-curious-shit --non-interactive",
     "dev:emulator": "VITE_AUTH_EMULATOR=http://127.0.0.1:9099 vite",
     "test": "vitest run --config worker/vitest.config.ts",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p worker"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p worker",
+    "dev:api": "npm run -s build && wrangler d1 migrations apply curious-shit-reactions --local && wrangler dev --port 8787",
+    "delete-user": "tsx scripts/delete-user.ts"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "^1.5.0",

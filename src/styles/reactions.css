@@ -1,0 +1,117 @@
+/* Reaction bar: design standard sections 1 (brass), 3 (pills) and 5 (reaction pill, wink). */
+
+.reactions {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  min-height: var(--space-8); /* reserved before counts arrive, so nothing shifts */
+  margin-top: var(--space-2);
+  transition: opacity var(--dur-base) var(--ease-settle);
+}
+
+/* Until counts load (or forever, if the API is down) the bar holds its space invisibly. */
+.reactions.is-pending {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--space-8);
+  padding: 0 var(--space-3);
+  background: var(--plinth);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font: 500 var(--fs-small) / 1 var(--font-ui);
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease-settle),
+    border-color var(--dur-fast) var(--ease-settle),
+    color var(--dur-fast) var(--ease-settle);
+}
+
+/* 32px pill, 44px touch target. */
+.pill::before {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--space-3) / 2) calc(-1 * var(--space-1));
+}
+
+.pill__emoji {
+  display: inline-block;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-size: var(--fs-body);
+  line-height: 1;
+}
+
+.pill__count[hidden] {
+  display: none;
+}
+
+@media (hover: hover) {
+  .pill:hover {
+    background: var(--plinth-raised);
+    color: var(--text-primary);
+  }
+}
+
+.pill.is-active {
+  background: var(--brass-wash);
+  border-color: var(--brass-dim);
+  color: var(--brass);
+}
+
+.pill__emoji.is-winking {
+  animation: wink 240ms var(--ease-wink);
+}
+
+.pill__count.is-changing {
+  animation: count-in var(--dur-fast) var(--ease-settle);
+}
+
+@keyframes wink {
+  50% {
+    transform: scale(1.18);
+  }
+}
+
+@keyframes count-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Signed-out tooltip: tapping it opens the sign-in dialog. */
+.reactions__prompt {
+  position: absolute;
+  bottom: calc(100% + var(--space-2));
+  z-index: 2;
+  padding: var(--space-2) var(--space-3);
+  background: var(--plinth-raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-fixture);
+  font: 500 var(--fs-small) / 1.4 var(--font-ui);
+  white-space: nowrap;
+  color: var(--text-primary);
+  cursor: pointer;
+  opacity: 0;
+  transform: translateX(-50%);
+  transition: opacity var(--dur-base) var(--ease-settle);
+}
+
+.reactions__prompt.is-visible {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill__emoji.is-winking {
+    animation: none;
+  }
+}

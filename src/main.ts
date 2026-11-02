@@ -1,10 +1,11 @@
 import { startAccount } from "./account.ts";
+import { attachReactions, startReactions } from "./reactions.ts";
 import { Gallery, LINES, loadFeed } from "./gallery.ts";
 import { hasInitialQuery, startSearch } from "./search.ts";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
-const gallery = new Gallery($("feed"), $("feed-status"));
+const gallery = new Gallery($("feed"), $("feed-status"), attachReactions);
 const searching = hasInitialQuery();
 if (searching) gallery.showLoading();
 
@@ -29,3 +30,4 @@ startSearch(gallery, feedReady, {
 });
 
 startAccount();
+startReactions();
