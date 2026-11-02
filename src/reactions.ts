@@ -7,8 +7,6 @@ import { getIdToken, onViewerChange, openSignIn } from "./account.ts";
 
 const API = "/api/reactions";
 const MAX_IDS = 8;
-const PROMPT = "Sign in to leave your mark";
-const PROMPT_MS = 3000;
 
 type Counts = Partial<Record<ReactionKey, number>>;
 interface PosterState {
@@ -44,7 +42,7 @@ export function attachReactions(cards: HTMLElement[]): void {
     bar.dataset.bound = "1";
     bar.addEventListener("click", (e) => {
       const pill = (e.target as Element).closest<HTMLButtonElement>(".pill");
-      if (pill) tap(id, pill.dataset.key as ReactionKey, pill);
+      if (pill) tap(id, pill.dataset.key as ReactionKey);
     });
     if (!bars.has(id)) bars.set(id, new Set());
     bars.get(id)!.add(bar);
@@ -122,9 +120,9 @@ interface Flight {
 const flights = new Map<string, Flight>();
 const queues = new Map<string, Promise<unknown>>(); // per poster+emoji: keep add/remove in tap order
 
-function tap(id: string, key: ReactionKey, pill: HTMLButtonElement): void {
+function tap(id: string, key: ReactionKey): void {
   if (!signedIn) {
-    showPrompt(pill);
+    openSignIn(); // counts are visible to everyone; reacting needs an account
     return;
   }
   const s = state.get(id);
@@ -193,15 +191,14 @@ function render(id: string, winkKey?: ReactionKey): void {
       const count = s.counts[key] ?? 0;
       const mine = signedIn && s.mine.has(key);
       const countEl = pill.querySelector<HTMLElement>(".pill__count")!;
-      const text = count > 0 ? formatCount(count) : "";
+      const text = formatCount(count);
       if (countEl.textContent !== text) {
         countEl.textContent = text;
         restartAnimation(countEl, "is-changing");
       }
-      countEl.hidden = count === 0;
       pill.classList.toggle("is-active", mine);
       pill.setAttribute("aria-pressed", String(mine));
-      pill.setAttribute("aria-label", count > 0 ? `${label}, ${count}` : label);
+      pill.setAttribute("aria-label", `${label}, ${count}`);
       if (winkKey === key) restartAnimation(pill.querySelector(".pill__emoji")!, "is-winking");
     }
   }
@@ -219,36 +216,4 @@ export function formatCount(n: number): string {
   if (n < 1000) return String(n);
   if (n < 1_000_000) return short(n / 1000, "k");
   return short(n / 1_000_000, "M");
-}
-
-// ---------- Signed-out prompt ----------
-
-let promptTimer: number | undefined;
-
-function showPrompt(pill: HTMLButtonElement): void {
-  document.querySelectorAll(".reactions__prompt").forEach((el) => el.remove());
-  window.clearTimeout(promptTimer);
-  const prompt = document.createElement("button");
-  prompt.type = "button";
-  prompt.className = "reactions__prompt";
-  prompt.textContent = PROMPT;
-  prompt.addEventListener("click", () => {
-    prompt.remove();
-    openSignIn();
-  });
-  const bar = pill.closest(".reactions")!;
-  bar.append(prompt);
-  // Center above the tapped pill, but keep the whole tooltip on screen.
-  const barBox = bar.getBoundingClientRect();
-  const pillBox = pill.getBoundingClientRect();
-  const half = prompt.offsetWidth / 2;
-  const center = pillBox.left + pillBox.width / 2;
-  const margin = 8;
-  const clamped = Math.min(Math.max(center, half + margin), document.documentElement.clientWidth - half - margin);
-  prompt.style.left = `${clamped - barBox.left}px`;
-  requestAnimationFrame(() => prompt.classList.add("is-visible"));
-  promptTimer = window.setTimeout(() => {
-    prompt.classList.remove("is-visible");
-    window.setTimeout(() => prompt.remove(), 300);
-  }, PROMPT_MS);
 }

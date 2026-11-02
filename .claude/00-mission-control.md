@@ -57,7 +57,8 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-02 | D1 keeps a `counts` table updated in the same transaction as `reactions` | Reading counts costs 7 rows per poster regardless of popularity, protecting the free read quota |
 | 2026-11-02 | Add/remove are `PUT`/`DELETE` per poster and emoji, not a toggle | Idempotent, so retries and double taps can't flip state |
 | 2026-11-02 | Rate limits: about 60 changes/min per user, about 300 reads/min per IP, via the Workers rate-limit binding | Owner approved. Cloudflare's docs say the limits are approximate and per location, which is fine for flood protection |
-| 2026-11-02 | Tapping the signed-out tooltip opens the sign-in dialog | Owner approved |
+| 2026-11-02 | Tapping the signed-out tooltip opens the sign-in dialog | Owner approved (superseded below) |
+| 2026-11-02 | After trying the preview: "Sign in to react" becomes "Sign in to vote" (button and dialog); signed-out taps open sign-in directly, no tooltip; counts always show, including 0; title and reaction bar move above the poster in one row (stacked on phones); title 31px (25px on phones) in bright text; emoji 28px in 48px pills | Owner feedback: "react" reads as the framework, and titles and emoji were too small and easy to miss |
 | 2026-11-01 | `.claude/PRD.md` is the only PRD; the claude.ai shared copy is dropped and no longer maintained | The repo file is versioned and read by every session; one copy can't drift |
 
 ## Plan
@@ -224,7 +225,7 @@ curious-shit/
 | 6.5 | Tests | `npm test`: Worker tests on `@cloudflare/vitest-pool-workers` with local D1. One-of-each-emoji rule, idempotency, removal, auth failures, validation, counts, rate limits. | confirmed |
 | 6.6 | Reaction bar | Seven pills per card to the design standard; optimistic updates with rollback; duplicate cards stay in sync. | confirmed |
 | 6.7 | Loading counts | One request per batch of 8 after render; reserved space so nothing shifts; failure keeps bars invisible. | confirmed |
-| 6.8 | Signed out | "Sign in to leave your mark" tooltip for 3s; tapping it opens the sign-in dialog. | confirmed |
+| 6.8 | Signed out | Counts visible to everyone; tapping a pill opens the sign-in dialog (changed from a tooltip after the owner tried the preview). | confirmed |
 | 6.9 | Deletion | `npm run delete-user -- <uid>` removes a user's reactions and fixes counts. | confirmed |
 | 6.10 | Local dev | Local Worker and D1 behind `/api`; emulator tokens accepted only with an explicit dev-only setting. | confirmed |
 
@@ -264,7 +265,7 @@ Checked 2026-11-01 on the owner's machine (WSL2, Linux):
 - **LCP under real throttling misses the target.** Lighthouse's default simulated throttling gives about 1.6s, but devtools (applied) throttling gives a median of about 2.7s for both phase 4 and phase 5. The 141 KB first poster takes about 2s to download on throttled 4G. Phase 7 should decide which measurement counts and, if needed, add a smaller phone-sized image (lower WebP quality or a ~640px variant).
 - Firebase Spark allows 5 email-link sign-in emails a day (see Decisions). Testing email sign-in uses that quota.
 - Every preview branch needs its own Firebase authorized domain (`<branch>-curious-shit.smokeraven667.workers.dev`) for sign-in to work there.
-- On phones, "Sign in to react" shortens the search placeholder to "Search every word…".
+- On phones, "Sign in to vote" shortens the search placeholder to "Search every word…".
 - Fonts load from Google Fonts at runtime, so the page needs network access to show the right typefaces.
 - Cloudflare and Firebase accounts and projects have to be created by the owner; Claude can't sign up for them. Deferred to phase 4 (Cloudflare) and phase 5 (Firebase), when they're first needed.
 - Generated images aren't committed, so a fresh clone must run `npm run ingest` before `npm run dev` shows posters.

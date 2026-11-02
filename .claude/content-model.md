@@ -10,7 +10,7 @@ The page has six sections, top to bottom, fed by two data records. Only Must-Hav
 | `search_input` | Free-text query box | Up to 100 characters. Results update about 150 ms after typing stops. The query is kept in the URL as `?q=` so searches can be shared. Placeholder in the museum-placard voice, e.g. "Search every word on every wall", 40 characters max. |
 | `result_status` | Count shown while a search is active | Format: "N exhibits" ("1 exhibit"). Hidden when the box is empty. If the search index can't be loaded: "Search is closed for a moment. Shit happens." |
 | `clear_control` | Resets the feed | Icon button with an accessible label. |
-| `auth_control` | Sign-in or account button | Signed out: "Sign in to react". Signed in: the user's initial on a square fixture, opening a menu with their name or email and "Sign out". |
+| `auth_control` | Sign-in or account button | Signed out: "Sign in to vote". Signed in: the user's initial on a square fixture, opening a menu with their name or email and "Sign out". |
 
 ## 2. Gallery feed (one poster card per image)
 
@@ -18,7 +18,7 @@ The page has six sections, top to bottom, fed by two data records. Only Must-Hav
 | --- | --- | --- |
 | `image` | The poster | Responsive WebP at 2–3 widths via `srcset`. Width and height set up front so the page doesn't jump. Landscape only (aspect ratio at least 1.2); anything else is rejected at build. Lazy-loaded except the first card, in batches of 8. |
 | `alt` | Accessible description | 125 characters max. Defaults to the title; hand-written alt text comes later with the sidecar file. |
-| `title` | Placard label under the image | Built from the filename: hyphens become spaces, title case. 80 characters max. Small caps, muted. |
+| `title` | Placard label above the image, in a header row with the reaction bar | Built from the filename: hyphens become spaces, title case. 80 characters max. Small caps, large and bright. |
 | `reaction_bar` | See section 3 | — |
 
 The search fields `ocr_text` and `keywords` never appear on the card; they live only in the index.
@@ -28,9 +28,9 @@ The search fields `ocr_text` and `keywords` never appear on the card; they live 
 | Field | Description | Constraints |
 | --- | --- | --- |
 | `reaction_types` | Fixed set of emoji | Seven keys, each with an emoji and a screen-reader label (see table below). One config file shared by the frontend and the Worker. |
-| `count` (per type) | Total reactions | Whole number, shortened at 1,000 and up ("1.2k"). Hidden when zero. |
+| `count` (per type) | Total reactions | Whole number, shortened at 1,000 and up ("1.2k"). Always shown, including 0, to signed-in and signed-out visitors. |
 | `user_state` (per type) | Whether the current user has reacted; tapping again removes it | Boolean, shown only when signed in, as a subtle highlight. |
-| `signed_out_prompt` | Shown when a signed-out user taps an emoji | One line, e.g. "Sign in to leave your mark". 40 characters max. |
+| `signed_out_tap` | What a signed-out tap does | Opens the sign-in dialog. (Replaced the "Sign in to leave your mark" tooltip on 2026-11-02.) |
 
 | Key | Emoji | Label |
 | --- | --- | --- |
@@ -55,7 +55,7 @@ The search fields `ocr_text` and `keywords` never appear on the card; they live 
 
 | Field | Description | Constraints |
 | --- | --- | --- |
-| `heading` | Dialog title | 30 characters max. "Sign in to react"; "Check your email" after a link is sent; "Confirm your email" when a link is opened on another device. |
+| `heading` | Dialog title | 30 characters max. "Sign in to vote"; "Check your email" after a link is sent; "Confirm your email" when a link is opened on another device. |
 | `providers` | Sign-in options | Google (popup) and email magic link. Email links are capped at 5 a day on the free plan; past that the dialog says "Email sign-in is full for today. Try Google, or come back tomorrow." |
 | `privacy_note` | What gets stored | "We keep only an anonymous ID. Your email stays with Google's Firebase." Links to `/privacy.html`. |
 

@@ -10,7 +10,7 @@
   --strip-height: var(--space-16);
   --first-exhibit-gap: var(--space-8);
   --placard-gap: var(--space-3);
-  --fs-placard-responsive: var(--fs-body);
+  --fs-placard-responsive: var(--fs-h3);
 }
 
 @media (min-width: 768px) {
@@ -251,14 +251,23 @@
   }
 }
 
+/* Title and reaction bar sit above the poster: one row on wide screens, stacked on phones. */
+.exhibit__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-6);
+  margin-bottom: var(--placard-gap);
+}
+
 .exhibit__title {
-  margin-top: var(--placard-gap);
   font-family: var(--font-placard);
   font-weight: 500;
   font-size: var(--fs-placard-responsive);
-  line-height: 1.3;
-  letter-spacing: 0.08em;
-  color: var(--text-secondary);
+  line-height: 1.15;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
 }
 
 /* ---------- Feed status ---------- */

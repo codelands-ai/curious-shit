@@ -25,7 +25,8 @@
   --fs-h2: 1.953rem;
   --fs-h3: 1.563rem;
   --fs-wordmark: 1.563rem;
-  --fs-placard: 1.25rem;
+  --fs-placard: 1.953rem;
+  --fs-emoji: 1.75rem;
   --fs-body: 1rem;
   --fs-small: 0.875rem;
   --fs-micro: 0.75rem;
@@ -46,6 +47,7 @@
   --poster-max: 1600px;
   --radius-fixture: 2px;
   --radius-pill: 999px;
+  --pill-height: var(--space-12);
 
   /* Motion */
   --dur-fast: 120ms;

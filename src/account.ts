@@ -8,7 +8,7 @@ const SIGNED_IN_FLAG = "cs.signedIn"; // "1" while signed in, so we know to load
 
 type Panel = "choose" | "sent" | "confirm";
 const HEADINGS: Record<Panel, string> = {
-  choose: "Sign in to react",
+  choose: "Sign in to vote",
   sent: "Check your email",
   confirm: "Confirm your email",
 };

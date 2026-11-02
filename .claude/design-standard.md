@@ -26,15 +26,15 @@ The site is **dark only**. There is no light mode; the hallway is always after h
 
 | Token | Hex | Contrast on `--wall` | Use |
 | --- | --- | --- | --- |
-| `--text-primary` | `#E8E1D3` | ~14:1 | Wordmark, input text, dialog headings, prose. Bone or old paper, never pure white. |
-| `--text-secondary` | `#A39A8A` | ~6.7:1 | Placard titles, reaction counts, result status, `auth_control` label. |
+| `--text-primary` | `#E8E1D3` | ~14:1 | Wordmark, poster titles, input text, dialog headings, prose. Bone or old paper, never pure white. |
+| `--text-secondary` | `#A39A8A` | ~6.7:1 | Reaction counts, result status, `auth_control` label. |
 | `--text-faint` | `#847D71` | ~4.6:1 | Placeholders, disabled states, end-of-feed and no-results lines. Never smaller than 14px. |
 
 ### Accents
 
 | Token | Value | Use |
 | --- | --- | --- |
-| `--brass` | `#C9A15B` | The only accent. Focus rings, the count of a reaction the user has made, links, the loading dot. Never a fill larger than a 32px pill, never on a poster. |
+| `--brass` | `#C9A15B` | The only accent. Focus rings, the count of a reaction the user has made, links, the loading dot. Never a fill larger than a 48px pill, never on a poster. |
 | `--brass-dim` | `#8A6F3F` | Border of an active reaction pill. |
 | `--brass-wash` | `rgba(201, 161, 91, 0.10)` | Background of an active reaction pill. |
 | `--spot` | `rgba(255, 214, 160, 0.06)` | The picture-light glow behind each poster (see Texture). Rises to `--spot-hover` `rgba(255, 214, 160, 0.10)` on hover. |
@@ -70,10 +70,11 @@ Base 16px, ratio 1.25 (major third). Sizes are rounded to whole pixels and set i
 | `--fs-h2` | 31px / 1.953rem | Cormorant Garamond 600 | 1.15 | -0.01em | Dialog heading, privacy page sections. |
 | `--fs-h3` | 25px / 1.563rem | Cormorant Garamond 500 | 1.2 | 0 | Privacy page subsections. |
 | `--fs-wordmark` | 25px / 1.563rem | Cormorant SC 500 | 1 | 0.12em | "Curious Shit" in the search bar. |
-| `--fs-placard` | 20px / 1.25rem | Cormorant SC 500 | 1.3 | 0.08em | Poster titles. 16px below 768px. |
+| `--fs-placard` | 31px / 1.953rem | Cormorant SC 500 | 1.15 | 0.06em | Poster titles, in `--text-primary`. 25px (`--fs-h3`) below 768px. Changed 2026-11-02: titles sit above the poster and must be easy to read. |
+| `--fs-emoji` | 28px / 1.75rem | System colour-emoji font | 1 | 0 | Reaction emoji. |
 | `--fs-body` | 16px / 1rem | IBM Plex Sans 400 | 1.6 | 0 | Prose, search input, dialog body. |
 | `--fs-small` | 14px / 0.875rem | IBM Plex Sans 400 or 500 | 1.4 | 0.01em | Reaction counts (500), result status, feed status lines, privacy note. |
-| `--fs-micro` | 12px / 0.75rem | IBM Plex Sans 500 | 1.3 | 0.06em, uppercase | Tooltips and screen-reader-visible labels only. Never for content. |
+| `--fs-micro` | 12px / 0.75rem | IBM Plex Sans 500 | 1.3 | 0.06em, uppercase | Screen-reader-visible labels only. Never for content. |
 
 **Rules**
 
@@ -115,16 +116,17 @@ Base 16px, ratio 1.25 (major third). Sizes are rounded to whole pixels and set i
 | Poster max width | full width minus gutters | full width minus gutters | 1600px, centered |
 | Gap between exhibits | 64px | 96px | 128px |
 | Space above first exhibit (below search bar) | 32px | 48px | 64px |
-| Image to placard title | 12px | 16px | 16px |
-| Placard title to reaction bar | 8px | 8px | 8px |
+| Header row (title and reaction bar) to image | 12px | 16px | 16px |
+| Title to reaction bar | 12px, stacked | 24px, same row (wraps if needed) | 24px, same row |
 
 | Component | Value |
 | --- | --- |
 | Search bar strip | 64px tall, full viewport width, input centered with `max-width: 560px`. Wordmark left-aligned at the page gutter; `auth_control` right-aligned at the page gutter. Below 768px the wordmark hides and the input fills the space between gutter and `auth_control`. |
 | Search input | 40px tall, padding `0 16px`, 1px `--rule` border. |
-| Reaction pill | 32px tall, padding `0 12px`, 4px between emoji and count, 8px between pills. Pills wrap onto a second row on narrow screens; they never scroll horizontally. |
+| Exhibit header | Sits above the poster: title left, reaction bar right, vertically centered; below 768px the bar drops under the title. |
+| Reaction pill | 48px tall (`--pill-height`), padding `0 16px 0 12px`, 8px between emoji and count, 8px between pills; below 768px padding `0 12px 0 8px` and 4px between emoji and count, so four fit per row. Pills wrap; they never scroll horizontally. |
 | Sign-in dialog | `max-width: 400px`, padding 32px (24px below 768px), 24px between stacked elements, buttons 44px tall. |
-| Minimum touch target | 44 × 44px. A 32px pill gets its target from invisible padding. |
+| Minimum touch target | 44 × 44px. |
 
 ### Corners
 
@@ -234,7 +236,7 @@ Never use `linear` (except the loading dot) or the browser default `ease`.
 - Tap (removing): no wink. The pill returns to rest over `--dur-fast`.
 - Active state: background `--brass-wash`, 1px `--brass-dim` border, count in `--brass`.
 - Count change: the old number fades out and the new one in over `--dur-fast`. No counting-up animation.
-- Signed out: tapping shows `signed_out_prompt` as a tooltip above the pill, which fades in over `--dur-base` and stays for 3 seconds.
+- Signed out: counts are visible (including 0); tapping a pill opens the sign-in dialog.
 
 **Search**
 
@@ -294,7 +296,8 @@ Copy this block into the root stylesheet as-is.
   --fs-h2: 1.953rem;
   --fs-h3: 1.563rem;
   --fs-wordmark: 1.563rem;
-  --fs-placard: 1.25rem;
+  --fs-placard: 1.953rem;
+  --fs-emoji: 1.75rem;
   --fs-body: 1rem;
   --fs-small: 0.875rem;
   --fs-micro: 0.75rem;
@@ -315,6 +318,7 @@ Copy this block into the root stylesheet as-is.
   --poster-max: 1600px;
   --radius-fixture: 2px;
   --radius-pill: 999px;
+  --pill-height: var(--space-12);
 
   /* Motion */
   --dur-fast: 120ms;
