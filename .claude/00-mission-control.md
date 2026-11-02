@@ -59,6 +59,7 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-02 | Rate limits: about 60 changes/min per user, about 300 reads/min per IP, via the Workers rate-limit binding | Owner approved. Cloudflare's docs say the limits are approximate and per location, which is fine for flood protection |
 | 2026-11-02 | Tapping the signed-out tooltip opens the sign-in dialog | Owner approved (superseded below) |
 | 2026-11-02 | After trying the preview: "Sign in to react" becomes "Sign in to vote" (button and dialog); signed-out taps open sign-in directly, no tooltip; counts always show, including 0; title and reaction bar move above the poster in one row (stacked on phones); title 31px (25px on phones) in bright text; emoji 28px in 48px pills | Owner feedback: "react" reads as the framework, and titles and emoji were too small and easy to miss |
+| 2026-11-02 | Title and emoji sit inside a raised `--plinth` placard panel attached to the top of each poster, with pills on `--wall`; the picture light moves behind the whole exhibit and its edges are masked | Owner feedback: the pills crossed the glow's hard top edge; the panel should act as a divider between posters |
 | 2026-11-01 | `.claude/PRD.md` is the only PRD; the claude.ai shared copy is dropped and no longer maintained | The repo file is versioned and read by every session; one copy can't drift |
 
 ## Plan

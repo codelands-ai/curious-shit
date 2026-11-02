@@ -16,9 +16,9 @@ The site is **dark only**. There is no light mode; the hallway is always after h
 
 | Token | Hex | Use |
 | --- | --- | --- |
-| `--wall` | `#121110` | Page background. The gallery wall. |
+| `--wall` | `#121110` | Page background. The gallery wall. Also reaction pills at rest, set into the placard panel. |
 | `--wall-deep` | `#0B0A09` | Vignette edges, and the solid fallback for the search bar when `backdrop-filter` is unsupported. |
-| `--plinth` | `#1C1A17` | Raised surfaces: search input, sign-in dialog, reaction pills at rest, image placeholders while loading. |
+| `--plinth` | `#1C1A17` | Raised surfaces: search input, sign-in dialog, the placard panel above each poster, image placeholders while loading. |
 | `--plinth-raised` | `#26231F` | Hover state of any `--plinth` surface. |
 | `--rule` | `#34302A` | 1px borders and dividers. The only line color. |
 
@@ -116,14 +116,15 @@ Base 16px, ratio 1.25 (major third). Sizes are rounded to whole pixels and set i
 | Poster max width | full width minus gutters | full width minus gutters | 1600px, centered |
 | Gap between exhibits | 64px | 96px | 128px |
 | Space above first exhibit (below search bar) | 32px | 48px | 64px |
-| Header row (title and reaction bar) to image | 12px | 16px | 16px |
+| Placard panel padding | 12px 16px | 16px 24px | 16px 24px |
+| Placard panel to image | 0, attached | 0, attached | 0, attached |
 | Title to reaction bar | 12px, stacked | 24px, same row (wraps if needed) | 24px, same row |
 
 | Component | Value |
 | --- | --- |
 | Search bar strip | 64px tall, full viewport width, input centered with `max-width: 560px`. Wordmark left-aligned at the page gutter; `auth_control` right-aligned at the page gutter. Below 768px the wordmark hides and the input fills the space between gutter and `auth_control`. |
 | Search input | 40px tall, padding `0 16px`, 1px `--rule` border. |
-| Exhibit header | Sits above the poster: title left, reaction bar right, vertically centered; below 768px the bar drops under the title. |
+| Placard panel | A `--plinth` strip with a 1px `--rule` top border, attached to the top of the poster and the same width. Title left, reaction bar right, vertically centered; below 768px the bar drops under the title. It enters with the poster (same fade and rise). Panel and poster read as one exhibit; the wall between exhibits is the divider. |
 | Reaction pill | 48px tall (`--pill-height`), padding `0 16px 0 12px`, 8px between emoji and count, 8px between pills; below 768px padding `0 12px 0 8px` and 4px between emoji and count, so four fit per row. Pills wrap; they never scroll horizontally. |
 | Sign-in dialog | `max-width: 400px`, padding 32px (24px below 768px), 24px between stacked elements, buttons 44px tall. |
 | Minimum touch target | 44 × 44px. |
@@ -161,8 +162,9 @@ The hallway darkens at its edges.
 
 Each poster has a warm glow behind its top edge, as if lit by a brass picture lamp.
 
-- A pseudo-element behind the image, extending 48px past it on the top, left and right.
+- A pseudo-element behind the exhibit, extending 48px past it on the top, left and right.
 - `background: radial-gradient(ellipse 70% 60% at 50% 0%, var(--spot), transparent 70%);`
+- Sits behind the whole exhibit (placard panel and poster). A mask fades its outer 48px on the top, left and right, so the light never shows a hard edge.
 - Fades in when the poster enters the viewport (see Interactions) and brightens to `--spot-hover` on hover.
 
 ### 4.4 Poster shadow

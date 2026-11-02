@@ -22,7 +22,7 @@
   gap: var(--space-2);
   height: var(--pill-height);
   padding: 0 var(--space-4) 0 var(--space-3);
-  background: var(--plinth);
+  background: var(--wall); /* set into the --plinth placard panel */
   border: 1px solid transparent;
   border-radius: var(--radius-pill);
   font: 500 var(--fs-body) / 1 var(--font-ui);
