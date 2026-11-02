@@ -34,14 +34,18 @@ export function startReactions(): void {
   });
 }
 
-/** Add reaction bars to freshly rendered cards and load their counts. */
+/** Hook up the reaction bars of freshly rendered cards (the markup comes with the card) and load counts. */
 export function attachReactions(cards: HTMLElement[]): void {
   const ids: string[] = [];
   for (const card of cards) {
     const id = card.dataset.posterId;
-    if (!id || card.querySelector(".reactions")) continue;
-    const bar = createBar(id);
-    card.append(bar);
+    const bar = card.querySelector<HTMLElement>(".reactions");
+    if (!id || !bar || bar.dataset.bound) continue;
+    bar.dataset.bound = "1";
+    bar.addEventListener("click", (e) => {
+      const pill = (e.target as Element).closest<HTMLButtonElement>(".pill");
+      if (pill) tap(id, pill.dataset.key as ReactionKey, pill);
+    });
     if (!bars.has(id)) bars.set(id, new Set());
     bars.get(id)!.add(bar);
     if (state.has(id)) render(id);
@@ -176,24 +180,6 @@ async function send(id: string, key: ReactionKey, method: "PUT" | "DELETE"): Pro
 }
 
 // ---------- Rendering ----------
-
-function createBar(id: string): HTMLElement {
-  const bar = document.createElement("div");
-  bar.className = "reactions is-pending";
-  bar.setAttribute("role", "group");
-  bar.setAttribute("aria-label", "Reactions");
-  for (const { key, emoji } of REACTIONS) {
-    const pill = document.createElement("button");
-    pill.type = "button";
-    pill.className = "pill";
-    pill.dataset.key = key;
-    pill.setAttribute("aria-pressed", "false");
-    pill.innerHTML = `<span class="pill__emoji" aria-hidden="true">${emoji}</span><span class="pill__count" aria-hidden="true"></span>`;
-    pill.addEventListener("click", () => tap(id, key, pill));
-    bar.append(pill);
-  }
-  return bar;
-}
 
 function render(id: string, winkKey?: ReactionKey): void {
   const s = state.get(id);

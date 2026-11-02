@@ -149,6 +149,9 @@
 /* ---------- Feed ---------- */
 
 .hallway {
+  /* The picture light extends 48px past each poster, wider than the 16px phone gutter; clip it at the
+     screen edge so the page never scrolls sideways. (clip, not hidden: no scroll container.) */
+  overflow-x: clip;
   padding: var(--first-exhibit-gap) var(--gutter) var(--exhibit-gap);
   transition: opacity var(--dur-base) var(--ease-settle);
 }
