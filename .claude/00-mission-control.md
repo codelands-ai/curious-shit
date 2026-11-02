@@ -21,6 +21,7 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-01 | Phase 3: MiniSearch search bar with results, clearing, `?q=` links, error line, speed and accuracy checks | PR #6 |
 | 2026-11-01 | Phase 4: Cloudflare config, caching headers, `npm run deploy` / `deploy:preview`, first production deploy, mobile LCP fixes | PR #7 |
 | 2026-11-01 | Phase 5: Firebase sign-in (Google popup, email link), auth control and dialog, privacy page | PR #9 |
+| 2026-11-02 | Phase 6: reactions Worker + D1, reaction bar in a placard panel above each poster, Worker tests, delete-user script | `phase-6-reactions` |
 | 2026-11-01 | First poster published with `npm run deploy`: `jacob-esau.webp`, live and searchable in 12s | commit `98a8732` |
 
 ## Decisions
@@ -76,7 +77,7 @@ Each phase ends with something that can be seen or tested. Phases and steps are 
 | 3 | Search | done | Pinned search bar filtering the feed by filename and OCR text |
 | 4 | First deploy | done | Gallery and search live on Cloudflare (Workers static assets) |
 | 5 | Sign-in | done | Firebase Auth with Google and email magic link |
-| 6 | Reactions | in progress | Worker + D1 endpoint, reaction bar wired up, rate limiting |
+| 6 | Reactions | done | Worker + D1 endpoint, reaction bar wired up, rate limiting |
 | 7 | Launch readiness | proposed | Graceful degradation, success criteria checked (privacy page moved to phase 5) |
 
 Detailed steps for each phase get added below as they're confirmed.
@@ -215,22 +216,29 @@ curious-shit/
 - First-visit cost: up-front JS 4.7 KB gzipped (was 3.2 KB); Firebase is a separate 31 KB chunk not requested on first visit.
 - Lighthouse mobile, devtools (real) throttling, five runs each: preview median 2.66s vs production (phase 4 code) 2.69s, so no regression.
 
-### Phase 6: Reactions (confirmed 2026-11-02)
+### Phase 6: Reactions (done 2026-11-02)
 
 | # | Step | Detail | Status |
 | --- | --- | --- | --- |
-| 6.1 | Database | D1 `curious-shit-reactions`: `reactions` (unique on poster, emoji, uid) and `counts`, changed together in one batch. Migrations in `worker/migrations/`. | confirmed |
-| 6.2 | Worker API | `GET /api/reactions?ids=` (up to 8; plus the caller's own reactions with a token); `PUT`/`DELETE /api/reactions/:poster/:emoji`. Poster IDs checked against `feed.json`, emoji against `shared/reactions.ts`. | confirmed |
-| 6.3 | Token check | Firebase ID token verified with `jose` against Google's keys: signature, audience, issuer, expiry. Only `uid` is used. | confirmed |
-| 6.4 | Rate limiting | Rate-limit binding: writes per uid, reads per IP; 429 rolls the bar back quietly. | confirmed |
-| 6.5 | Tests | `npm test`: Worker tests on `@cloudflare/vitest-pool-workers` with local D1. One-of-each-emoji rule, idempotency, removal, auth failures, validation, counts, rate limits. | confirmed |
-| 6.6 | Reaction bar | Seven pills per card to the design standard; optimistic updates with rollback; duplicate cards stay in sync. | confirmed |
-| 6.7 | Loading counts | One request per batch of 8 after render; reserved space so nothing shifts; failure keeps bars invisible. | confirmed |
-| 6.8 | Signed out | Counts visible to everyone; tapping a pill opens the sign-in dialog (changed from a tooltip after the owner tried the preview). | confirmed |
-| 6.9 | Deletion | `npm run delete-user -- <uid>` removes a user's reactions and fixes counts. | confirmed |
-| 6.10 | Local dev | Local Worker and D1 behind `/api`; emulator tokens accepted only with an explicit dev-only setting. | confirmed |
+| 6.1 | Database | D1 `curious-shit-reactions`: `reactions` (unique on poster, emoji, uid) and `counts`, changed together in one batch. Migrations in `worker/migrations/`. | done |
+| 6.2 | Worker API | `GET /api/reactions?ids=` (up to 8; plus the caller's own reactions with a token); `PUT`/`DELETE /api/reactions/:poster/:emoji`. Poster IDs checked against `feed.json`, emoji against `shared/reactions.ts`. | done |
+| 6.3 | Token check | Firebase ID token verified with `jose` against Google's keys: signature, audience, issuer, expiry. Only `uid` is used. | done |
+| 6.4 | Rate limiting | Rate-limit binding: writes per uid, reads per IP; 429 rolls the bar back quietly. | done |
+| 6.5 | Tests | `npm test`: Worker tests on `@cloudflare/vitest-pool-workers` with local D1. One-of-each-emoji rule, idempotency, removal, auth failures, validation, counts, rate limits. | done |
+| 6.6 | Reaction bar | Seven pills per card to the design standard; optimistic updates with rollback; duplicate cards stay in sync. | done |
+| 6.7 | Loading counts | One request per batch of 8 after render; reserved space so nothing shifts; failure keeps bars invisible. | done |
+| 6.8 | Signed out | Counts visible to everyone; tapping a pill opens the sign-in dialog (changed from a tooltip after the owner tried the preview). | done |
+| 6.9 | Deletion | `npm run delete-user -- <uid>` removes a user's reactions and fixes counts. | done |
+| 6.10 | Local dev | Local Worker and D1 behind `/api`; emulator tokens accepted only with an explicit dev-only setting. | done |
 
 **Done when:** Worker tests pass; the owner can react, un-react and see counts on the live site; two accounts show combined counts; with the Worker unreachable, browsing and search work and bars are absent.
+
+**Verified 2026-11-02:**
+- Worker tests (`npm test`), 25/25 on a local D1 with real RS256 tokens. One reaction per user per emoji per poster, including 10 concurrent identical adds; the database's own unique constraint; idempotent add and remove; counts never negative; user deletion fixes counts; bad, expired, foreign-key, wrong-audience, wrong-issuer and unsigned tokens rejected; unknown posters and emoji rejected; both rate limits; emulator tokens accepted only on localhost with the dev flag. Deliberately breaking the count trigger fails 3 tests. `npm run deploy` runs these and refuses to upload on failure.
+- Browser end to end (local Worker, D1 and Auth emulator), 23/23: bars on every card, including the pre-rendered one; "Sign in to vote"; zero counts shown; signed-out tap opens sign-in; optimistic taps; three rapid taps match the server; repeats of a poster in the loop stay in sync; two users combine; un-react; sign-out clears highlights; failed writes roll back; Worker down hides bars with no layout shift and search still works; search results have bars; phone layout stacked, with pills in two rows.
+- Preview on Cloudflare: the free plan accepted both rate-limit bindings; the production D1 schema was applied; writes without a valid token get 401; the owner voted with Google and email-link accounts and the counts combined (2 distinct voters in production D1).
+- Lighthouse mobile (devtools throttling): CLS 0; LCP 2.75–2.84s against 2.66s in phase 5 (+6.5 KB JS, within noise).
+- Found and fixed: phone pages scrolled 32px sideways because of the picture light (since phase 2).
 
 ## Environment
 
@@ -267,6 +275,9 @@ Checked 2026-11-01 on the owner's machine (WSL2, Linux):
 - Firebase Spark allows 5 email-link sign-in emails a day (see Decisions). Testing email sign-in uses that quota.
 - Every preview branch needs its own Firebase authorized domain (`<branch>-curious-shit.smokeraven667.workers.dev`) for sign-in to work there.
 - On phones, "Sign in to vote" shortens the search placeholder to "Search every word…".
+- Preview deploys use the production D1 database, so votes cast on a preview are real. Schema migrations are applied only by production deploys.
+- Rate limits are approximate and counted per Cloudflare location (Cloudflare's docs); fine for flood protection, not exact quotas.
+- Reads are rate-limited by IP address, which Cloudflare's docs advise against for stable keys; there's no better key for signed-out visitors.
 - Fonts load from Google Fonts at runtime, so the page needs network access to show the right typefaces.
 - Cloudflare and Firebase accounts and projects have to be created by the owner; Claude can't sign up for them. Deferred to phase 4 (Cloudflare) and phase 5 (Firebase), when they're first needed.
 - Generated images aren't committed, so a fresh clone must run `npm run ingest` before `npm run dev` shows posters.
