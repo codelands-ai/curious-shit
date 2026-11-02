@@ -13,7 +13,9 @@ function unsignedToken(iss: string): string {
 
 describe("emulator tokens", () => {
   const emulatorToken = unsignedToken("https://securetoken.google.com/demo-curious-shit");
+  // Set and clear the flag explicitly: a developer's .dev.vars is loaded into the test env too.
   const withFlag = { ...env, ALLOW_EMULATOR_TOKENS: "1" } as Env;
+  const withoutFlag = { ...env, ALLOW_EMULATOR_TOKENS: undefined } as Env;
 
   it("are accepted on localhost when ALLOW_EMULATOR_TOKENS=1", async () => {
     expect(await depsFor(new URL("http://localhost:8787/api/reactions"), withFlag).verify(emulatorToken)).toBe("emulator-user");
@@ -24,7 +26,7 @@ describe("emulator tokens", () => {
   });
 
   it("are rejected on localhost without the flag", async () => {
-    expect(await depsFor(new URL("http://localhost:8787/api/reactions"), env).verify(emulatorToken)).toBeNull();
+    expect(await depsFor(new URL("http://localhost:8787/api/reactions"), withoutFlag).verify(emulatorToken)).toBeNull();
   });
 
   it("must come from a demo- project even in dev", async () => {
