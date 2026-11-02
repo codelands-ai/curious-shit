@@ -11,18 +11,23 @@
     "deploy": "tsx scripts/deploy.ts",
     "deploy:preview": "tsx scripts/deploy.ts --preview",
     "emulators": "npx -y firebase-tools@15.29.0 emulators:start --only auth --project demo-curious-shit --non-interactive",
-    "dev:emulator": "VITE_AUTH_EMULATOR=http://127.0.0.1:9099 vite"
+    "dev:emulator": "VITE_AUTH_EMULATOR=http://127.0.0.1:9099 vite",
+    "test": "vitest run --config worker/vitest.config.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p worker"
   },
   "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.5.0",
     "@types/node": "^26.6.6",
     "sharp": "^0.35.5",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
+    "vitest": "^4.1.12",
     "wrangler": "^4.156.0"
   },
   "dependencies": {
     "firebase": "^13.1.0",
+    "jose": "^6.2.15",
     "minisearch": "^7.2.0"
   }
 }

@@ -1,9 +1,38 @@
-# The static site, served as Workers static assets (no Worker script).
-# The reactions Worker (phase 6) has its own config in worker/.
+# One Worker for the whole site. Static files (dist/) are served without running any script;
+# only /api/* runs worker/src/index.ts, the reactions API. If the script fails, the site still loads.
 name = "curious-shit"
+main = "worker/src/index.ts"
 compatibility_date = "2026-11-01"
 workers_dev = true
 preview_urls = true
 
 [assets]
 directory = "./dist"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+
+[vars]
+FIREBASE_PROJECT_ID = "curious-shit"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "curious-shit-reactions"
+database_id = "ccb021f8-a6f2-48b6-874d-15c595cbcc67"
+migrations_dir = "worker/migrations"
+
+# Approximate, per Cloudflare location (see .claude/00-mission-control.md, phase 6 decisions).
+[[ratelimits]]
+name = "WRITE_LIMITER" # reaction changes, keyed by Firebase uid
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 60
+  period = 60
+
+[[ratelimits]]
+name = "READ_LIMITER" # count lookups, keyed by client IP
+namespace_id = "1002"
+
+  [ratelimits.simple]
+  limit = 300
+  period = 60
