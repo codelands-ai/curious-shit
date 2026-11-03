@@ -306,7 +306,7 @@ curious-shit/
   - Fixed: no h1 on phones; `--text-faint` on `--plinth` (4.3:1); `--oxblood` errors (3.5:1, now `#C76852` at 4.6:1).
   - Keyboard: tab order is search, sign-in, then the pills; the dialog keeps focus and returns it to "Sign in to vote" on close.
 - Page basics: SVG favicon and touch icon, meta description, Open Graph and Twitter tags with a 1200×630 share image of the newest poster (made by ingest), canonical URLs, and a 404 page ("Nothing hangs here") with status 404.
-- CSP: `default-src 'self'` plus only Firebase sign-in's origins. No violations across the feed, voting, search, privacy, 404 and the Google popup and frame. The owner confirmed sign-in works under the CSP on the live site (2026-11-03). The owner then confirmed Google sign-in works under the CSP on the preview.
+- CSP: `default-src 'self'` plus only Firebase sign-in's origins. No violations across the feed, voting, search, privacy, 404 and the Google popup and frame. The owner confirmed Google sign-in works under the CSP on the phase 7 preview (2026-11-03), which runs the same headers as production.
 - README: owner's guide to publishing, corrections, previews, deletion and local dev.
 
 ## Environment
