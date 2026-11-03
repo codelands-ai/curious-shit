@@ -1,7 +1,7 @@
 // Poster card markup, shared by the build (the first card is written into index.html so it
 // paints without waiting for JavaScript) and the browser (every other card).
 
-import { POSTER_SIZES, type FeedPoster } from "./poster.ts";
+import { POSTER_SIZES, type FeedFile, type FeedPoster } from "./poster.ts";
 import { REACTIONS } from "./reactions.ts";
 
 /**
@@ -40,7 +40,7 @@ export function cardHtml(poster: FeedPoster, first: boolean): string {
   const variants = [...poster.src].sort((a, b) => a.width - b.width);
   const img: Record<string, string | number> = {
     class: "exhibit__image",
-    alt: poster.title,
+    alt: poster.alt ?? poster.title,
     width: poster.width,
     height: poster.height,
     sizes: POSTER_SIZES,
@@ -56,13 +56,29 @@ export function cardHtml(poster: FeedPoster, first: boolean): string {
   const classes = first ? "exhibit is-lit is-still" : "exhibit";
   return (
     `<figure class="${classes}" data-poster-id="${escape(poster.id)}">` +
-    `<figcaption class="exhibit__header"><span class="exhibit__heading">${headingHtml(poster)}</span>${reactionBarHtml()}</figcaption>` +
+    `<figcaption class="exhibit__header"><div class="exhibit__label"><span class="exhibit__heading">${headingHtml(poster)}</span>${tagsHtml(poster)}</div>${reactionBarHtml()}</figcaption>` +
     // AVIF where supported (about 40% smaller), WebP everywhere else.
     `<div class="exhibit__frame"><picture>` +
     (poster.avif?.length ? `<source type="image/avif" srcset="${escape(srcset(poster.avif))}" sizes="${escape(POSTER_SIZES)}">` : "") +
     `<img ${attrs}></picture></div>` +
     `</figure>`
   );
+}
+
+// Topic tags under the title; each links to that topic's filter (src/main.ts filters in place).
+function tagsHtml(poster: FeedPoster): string {
+  if (!poster.tags?.length) return "";
+  const items = poster.tags.map((t) => `<li><a class="tag" href="/?tag=${encodeURIComponent(t.slug)}" data-tag="${escape(t.slug)}">${escape(t.name)}</a></li>`);
+  return `<ul class="exhibit__tags" aria-label="Topics">${items.join("")}</ul>`;
+}
+
+/** The filter row under the top bar: "All", then every topic in use with its poster count. */
+export function topicsHtml(tags: FeedFile["tags"]): string {
+  if (tags.length === 0) return "";
+  const link = (slug: string, label: string, count?: number) =>
+    `<a class="topic" href="${slug ? `/?tag=${encodeURIComponent(slug)}` : "/"}" data-tag="${escape(slug)}"${slug ? "" : ' aria-current="true"'}>` +
+    `${escape(label)}${count === undefined ? "" : `<span class="topic__count">${count}</span>`}</a>`;
+  return [link("", "All"), ...tags.map((t) => link(t.slug, t.name, t.count))].join("");
 }
 
 // The title, with its last word and the share icon bound together so the icon never wraps onto a line alone.

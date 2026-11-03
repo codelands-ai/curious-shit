@@ -8,7 +8,8 @@ import { availableParallelism, tmpdir } from "node:os";
 import { basename, extname, join } from "node:path";
 import { promisify } from "node:util";
 import sharp from "sharp";
-import type { FeedPoster, IndexPoster } from "../shared/poster.ts";
+import { parse as parseYaml } from "yaml";
+import type { FeedFile, FeedPoster, IndexPoster, Tag } from "../shared/poster.ts";
 import { buildSearch } from "../shared/search.ts";
 
 const run = promisify(execFile);
@@ -39,6 +40,9 @@ const AVIF_EFFORT = 4;
 const OCR_MIN_WIDTH = 3000;
 const OCR_MAX_CHARS = 5000;
 const TITLE_MAX_CHARS = 80;
+const ALT_MAX_CHARS = 125;
+const DESCRIPTION_MAX_CHARS = 200;
+const TAGS_PATH = join(ROOT, "data/tags.yml");
 const STOP_WORDS = new Set(
   "a an and are as at be by for from in into is it its of on or the to vs versus with".split(" "),
 );
@@ -91,6 +95,18 @@ async function main(): Promise<void> {
     fail(`These images have an aspect ratio below ${MIN_ASPECT} and can't be published:\n${lines.join("\n")}`);
   }
 
+  // Sidecar metadata (phase 9): every file checked before anything is written.
+  const tagList = await readTagList();
+  const sidecars = new Map<string, Sidecar>();
+  const sidecarErrors: string[] = [];
+  for (const s of scanned) {
+    const result = await readSidecar(s.file, tagList);
+    if (typeof result === "string") sidecarErrors.push(result);
+    else if (result) sidecars.set(s.file, result);
+  }
+  sidecarErrors.push(...(await strayFiles(scanned)));
+  if (sidecarErrors.length > 0) fail(`Fix these poster metadata files:\n${sidecarErrors.join("\n")}`);
+
   // 1.3 Identify and 1.4 Retire.
   const manifest = await readManifest();
   const live = identify(manifest, scanned);
@@ -102,9 +118,14 @@ async function main(): Promise<void> {
   const records = await mapPool(live, availableParallelism(), async ({ entry, scan: s }) => {
     const [ocr_text, { src, avif }, og] = await Promise.all([ocrText(s), writeVariants(entry.id, s), writeShareImage(entry.id, s)]);
     const words = filenameWords(s.file);
+    const meta = sidecars.get(s.file);
+    const title = meta?.title ?? makeTitle(words);
     return {
       id: entry.id,
-      title: makeTitle(words),
+      title,
+      alt: meta?.alt ?? title,
+      tags: (meta?.tags ?? []).map((slug) => ({ slug, name: tagList.get(slug)! })),
+      ...(meta?.description ? { description: meta.description } : {}),
       keywords: makeKeywords(words),
       ocr_text,
       src,
@@ -123,9 +144,25 @@ async function main(): Promise<void> {
   const manifestChanged = await writeIfChanged(MANIFEST_PATH, json(manifest));
   const indexChanged = await writeIfChanged(INDEX_PATH, json({ posters: records }));
   const feed = records.map(
-    ({ id, title, src, avif, og, width, height, added_at }): FeedPoster => ({ id, title, src, avif, og, width, height, added_at }),
+    ({ id, title, alt, tags, description, src, avif, og, width, height, added_at }): FeedPoster => ({
+      id,
+      title,
+      alt,
+      tags,
+      ...(description ? { description } : {}),
+      src,
+      avif,
+      og,
+      width,
+      height,
+      added_at,
+    }),
   );
-  const feedChanged = await writeIfChanged(FEED_PATH, json({ posters: feed }));
+  // Tags in use, in data/tags.yml order, with how many posters carry each.
+  const tagsInUse: FeedFile["tags"] = [...tagList]
+    .map(([slug, name]) => ({ slug, name, count: records.filter((r) => r.tags.some((t) => t.slug === slug)).length }))
+    .filter((t) => t.count > 0);
+  const feedChanged = await writeIfChanged(FEED_PATH, json({ posters: feed, tags: tagsInUse } satisfies FeedFile));
   await writeIfChanged(SEARCH_INDEX_PATH, JSON.stringify(buildSearch(records)));
 
   // 1.9 Report.
@@ -309,6 +346,108 @@ function cleanText(raw: string): string {
     if (lastSpace > 0) text = text.slice(0, lastSpace);
   }
   return text;
+}
+
+// ---------- Sidecar metadata ----------
+
+interface Sidecar {
+  title?: string;
+  alt?: string;
+  tags?: string[];
+  description?: string;
+}
+
+const SIDECAR_FIELDS = new Set(["title", "alt", "tags", "description"]);
+
+async function readTagList(): Promise<Map<string, string>> {
+  const raw = await readFile(TAGS_PATH, "utf8").catch(() => "");
+  const parsed = (raw ? parseYaml(raw) : {}) as Record<string, unknown> | null;
+  const tags = new Map<string, string>();
+  for (const [slug, name] of Object.entries(parsed ?? {})) {
+    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug) || typeof name !== "string" || !name.trim()) {
+      fail(`data/tags.yml: "${slug}" needs a lowercase-hyphenated slug and a display name, like  deep-time: Deep time`);
+    }
+    tags.set(slug, name.trim());
+  }
+  return tags;
+}
+
+/** The poster's sidecar (posters/<name>.yml), undefined if it has none, or an error message. */
+async function readSidecar(file: string, tagList: Map<string, string>): Promise<Sidecar | undefined | string> {
+  const name = `${stem(file)}.yml`;
+  const raw = await readFile(join(POSTERS_DIR, name), "utf8").catch(() => null);
+  if (raw === null) return undefined;
+  let data: unknown;
+  try {
+    data = parseYaml(raw);
+  } catch (err) {
+    return `  ${name}: not valid YAML (${(err as Error).message.split("\n")[0]})`;
+  }
+  if (data === null || typeof data !== "object" || Array.isArray(data)) return `  ${name}: expected fields like  title: …  and  tags: [ … ]`;
+  const problems: string[] = [];
+  const out: Sidecar = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (!SIDECAR_FIELDS.has(key)) {
+      problems.push(`unknown field "${key}" (allowed: ${[...SIDECAR_FIELDS].join(", ")})`);
+      continue;
+    }
+    if (key === "tags") {
+      if (!Array.isArray(value) || !value.every((t) => typeof t === "string")) {
+        problems.push("tags must be a list, like  tags: [religion, bible]");
+        continue;
+      }
+      const tags = [...new Set(value as string[])];
+      for (const t of tags) {
+        if (!tagList.has(t)) {
+          const hint = closest(t, [...tagList.keys()]);
+          problems.push(`unknown tag "${t}"${hint ? ` (did you mean "${hint}"?)` : ""}; add new tags to data/tags.yml`);
+        }
+      }
+      out.tags = tags;
+      continue;
+    }
+    if (typeof value !== "string" || !value.trim()) {
+      problems.push(`${key} must be text`);
+      continue;
+    }
+    const text = value.trim().replace(/\s+/g, " ");
+    const max = key === "title" ? TITLE_MAX_CHARS : key === "alt" ? ALT_MAX_CHARS : DESCRIPTION_MAX_CHARS;
+    if (text.length > max) problems.push(`${key} is ${text.length} characters; the limit is ${max}`);
+    out[key as "title" | "alt" | "description"] = text;
+  }
+  return problems.length ? problems.map((p) => `  ${name}: ${p}`).join("\n") : out;
+}
+
+/** Metadata or correction files whose poster is gone (usually a rename that missed them). */
+async function strayFiles(scanned: ScannedFile[]): Promise<string[]> {
+  const stems = new Set(scanned.map((s) => stem(s.file)));
+  const errors: string[] = [];
+  for (const name of await readdir(POSTERS_DIR)) {
+    const sidecar = /^(.*)\.(yml|yaml)$/.exec(name);
+    if (!sidecar) continue;
+    if (sidecar[2] === "yaml") errors.push(`  ${name}: rename to ${sidecar[1]}.yml`);
+    else if (!stems.has(sidecar[1]!)) errors.push(`  ${name}: no poster image named ${sidecar[1]}.* (rename it along with its poster)`);
+  }
+  return errors;
+}
+
+/** The candidate within edit distance 2, if any. */
+function closest(word: string, candidates: string[]): string | undefined {
+  const distance = (a: string, b: string) => {
+    const row = Array.from({ length: b.length + 1 }, (_, i) => i);
+    for (let i = 1; i <= a.length; i++) {
+      let prev = row[0]!;
+      row[0] = i;
+      for (let j = 1; j <= b.length; j++) {
+        const temp = row[j]!;
+        row[j] = Math.min(row[j]! + 1, row[j - 1]! + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+        prev = temp;
+      }
+    }
+    return row[b.length]!;
+  };
+  const best = candidates.map((c) => [c, distance(word, c)] as const).sort((x, y) => x[1] - y[1])[0];
+  return best && best[1] <= 2 ? best[0] : undefined;
 }
 
 // ---------- 1.6 Title and keywords ----------

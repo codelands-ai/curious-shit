@@ -1,4 +1,5 @@
-// Search bar: lazy-loads the index, filters the gallery, and keeps the query in ?q=.
+// Search bar and topic filter: lazy-loads the index, filters the gallery, and keeps both in the URL
+// (?q= and ?tag=). With a tag alone no index is needed: the feed is filtered directly.
 
 import { SEARCH_INDEX_URL, type FeedPoster } from "../shared/poster.ts";
 import type { PosterSearch } from "../shared/search.ts";
@@ -15,7 +16,12 @@ interface Elements {
   hallway: HTMLElement;
 }
 
-export function startSearch(gallery: Gallery, feedReady: Promise<FeedPoster[] | null>, el: Elements): void {
+export interface SearchControl {
+  /** Filter by a topic tag (its slug), or null for all topics. */
+  setTag(slug: string | null): void;
+}
+
+export function startSearch(gallery: Gallery, feedReady: Promise<FeedPoster[] | null>, el: Elements): SearchControl {
   type Loaded = {
     search: PosterSearch;
     run: (search: PosterSearch, query: string) => string[];
@@ -23,7 +29,8 @@ export function startSearch(gallery: Gallery, feedReady: Promise<FeedPoster[] | 
   };
   let index: Promise<Loaded | null> | null = null;
   let timer: number | undefined;
-  let shown = ""; // the query currently on screen; "" means the full feed
+  let tag: string | null = new URLSearchParams(location.search).get("tag") || null;
+  let shown = ""; // the query + tag currently on screen; "" means the full feed
   let token = 0; // guards against an older, slower search finishing last
 
   // The pre-built index and the search library load together, on first use, so neither delays the first
@@ -50,9 +57,11 @@ export function startSearch(gallery: Gallery, feedReady: Promise<FeedPoster[] | 
   const apply = async (raw: string): Promise<void> => {
     const query = raw.trim();
     const mine = ++token;
-    writeUrl(query);
+    writeUrl(query, tag);
+    markTopic(tag);
+    const view = query || tag ? `${query}\u0000${tag ?? ""}` : "";
 
-    if (!query) {
+    if (!view) {
       if (shown === "") {
         el.resultStatus.hidden = true;
         return;
@@ -68,20 +77,28 @@ export function startSearch(gallery: Gallery, feedReady: Promise<FeedPoster[] | 
       return;
     }
 
-    const loaded = await loadIndex();
-    if (mine !== token) return;
-    if (!loaded) {
-      setStatus(el.resultStatus, SEARCH_UNAVAILABLE, true);
-      return;
+    let posters: FeedPoster[];
+    if (query) {
+      const loaded = await loadIndex();
+      if (mine !== token) return;
+      if (!loaded) {
+        setStatus(el.resultStatus, SEARCH_UNAVAILABLE, true);
+        return;
+      }
+      posters = loaded.run(loaded.search, query).flatMap((id) => loaded.byId.get(id) ?? []);
+    } else {
+      // A tag alone: newest first, straight from the feed.
+      posters = [...((await feedReady) ?? [])].sort((a, b) => b.added_at.localeCompare(a.added_at));
+      if (mine !== token) return;
     }
+    const tagName = tag ? posters.flatMap((p) => p.tags).find((t) => t.slug === tag)?.name ?? (await tagNameFromFeed(feedReady, tag)) : null;
+    if (tag) posters = posters.filter((p) => p.tags.some((t) => t.slug === tag));
+    if (mine !== token) return;
 
-    const t0 = performance.now();
-    const posters = loaded.run(loaded.search, query).flatMap((id) => loaded.byId.get(id) ?? []);
-    if (import.meta.env.DEV) console.debug(`search "${query}": ${posters.length} in ${(performance.now() - t0).toFixed(1)}ms`);
-
-    shown = query;
+    shown = view;
     await transition(el.hallway, () => {
-      setStatus(el.resultStatus, `${posters.length} ${posters.length === 1 ? "exhibit" : "exhibits"}`, false);
+      const count = `${posters.length} ${posters.length === 1 ? "exhibit" : "exhibits"}`;
+      setStatus(el.resultStatus, tagName ? `${count} · ${tagName}` : count, false);
       gallery.show(posters, { loop: false, entrance: false, emptyLine: LINES.noResults });
     });
   };
@@ -117,25 +134,48 @@ export function startSearch(gallery: Gallery, feedReady: Promise<FeedPoster[] | 
     void apply(el.input.value);
   });
 
-  // A shared ?q= link runs its search straight away.
+  // A shared ?q= or ?tag= link runs straight away.
   const initial = new URLSearchParams(location.search).get("q")?.trim() ?? "";
   if (initial) {
     el.input.value = initial.slice(0, el.input.maxLength);
     el.clear.hidden = false;
-    void apply(el.input.value);
   }
+  if (initial || tag) void apply(el.input.value);
+
+  return {
+    setTag(slug) {
+      tag = slug && slug !== tag ? slug : null; // choosing the active topic again clears it
+      window.clearTimeout(timer);
+      void apply(el.input.value);
+    },
+  };
 }
 
-/** True when the page opened with a search in the URL, so the full feed shouldn't render first. */
+/** True when the page opened with a search or topic in the URL, so the full feed shouldn't render first. */
 export function hasInitialQuery(): boolean {
-  return Boolean(new URLSearchParams(location.search).get("q")?.trim());
+  const params = new URLSearchParams(location.search);
+  return Boolean(params.get("q")?.trim() || params.get("tag"));
 }
 
-function writeUrl(query: string): void {
+function writeUrl(query: string, tag: string | null): void {
   const url = new URL(location.href);
   if (query) url.searchParams.set("q", query);
   else url.searchParams.delete("q");
+  if (tag) url.searchParams.set("tag", tag);
+  else url.searchParams.delete("tag");
   if (url.href !== location.href) history.replaceState(history.state, "", url);
+}
+
+/** Highlight the active topic in the filter row (aria-current). */
+function markTopic(tag: string | null): void {
+  for (const link of document.querySelectorAll<HTMLAnchorElement>(".topics a[data-tag]")) {
+    if ((link.dataset.tag || null) === tag) link.setAttribute("aria-current", "true");
+    else link.removeAttribute("aria-current");
+  }
+}
+
+async function tagNameFromFeed(feedReady: Promise<FeedPoster[] | null>, slug: string): Promise<string> {
+  return ((await feedReady) ?? []).flatMap((p) => p.tags).find((t) => t.slug === slug)?.name ?? slug;
 }
 
 function setStatus(node: HTMLElement, text: string, isError: boolean): void {

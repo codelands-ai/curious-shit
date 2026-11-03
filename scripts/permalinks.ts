@@ -30,6 +30,10 @@ function page(poster: FeedPoster): string {
   html = swap(html, /<meta property="og:url" content="[^"]*">/, `<meta property="og:url" content="${escape(url)}">`, "og:url");
   html = swap(html, /<meta property="og:image" content="[^"]*">/, `<meta property="og:image" content="${escape(SITE_URL + poster.og)}">`, "og:image");
   html = swap(html, /<link rel="canonical" href="[^"]*">/, `<link rel="canonical" href="${escape(url)}">`, "canonical");
+  if (poster.description) {
+    html = swap(html, /<meta name="description" content="[^"]*">/, `<meta name="description" content="${escape(poster.description)}">`, "description");
+    html = swap(html, /<meta property="og:description" content="[^"]*">/, `<meta property="og:description" content="${escape(poster.description)}">`, "og:description");
+  }
   html = swap(html, /<link [^>]*data-poster-preload[^>]*>/, `<link ${attrsHtml(posterPreloadAttrs(poster))}>`, "poster preload");
   html = swap(html, /<div id="feed" class="feed"><figure[\s\S]*?<\/figure><\/div>/, `<div id="feed" class="feed">${cardHtml(poster, true)}</div>`, "pre-rendered card");
   return html;

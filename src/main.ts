@@ -31,7 +31,7 @@ const feedReady = loadFeed().then(
   },
 );
 
-startSearch(gallery, feedReady, {
+const search = startSearch(gallery, feedReady, {
   form: $("search"),
   input: $("search-input"),
   clear: $("search-clear"),
@@ -42,3 +42,11 @@ startSearch(gallery, feedReady, {
 startAccount();
 startReactions();
 startSharing();
+
+// Topic links (the filter row and the tags on each poster) filter in place instead of reloading.
+document.addEventListener("click", (e) => {
+  const link = (e.target as Element).closest<HTMLAnchorElement>("a[data-tag]");
+  if (!link || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  e.preventDefault();
+  search.setTag(link.dataset.tag || null);
+});

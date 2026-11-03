@@ -50,7 +50,7 @@ The site is **dark only**. There is no light mode; the hallway is always after h
 
 ## 2. Typography
 
-Three families, self-hosted from `src/fonts/` (Latin subset, as served by Google Fonts; SIL Open Font License), loaded with `font-display: swap`, except Cormorant SC, which is preloaded and uses `font-display: optional`: a late swap re-wraps poster titles and pushes the poster down, so if it misses first paint, the fallback stays for that page view.
+Three families, self-hosted from `src/fonts/` (Latin subset, as served by Google Fonts; SIL Open Font License), loaded with `font-display: optional` for Cormorant SC (preloaded) and IBM Plex Sans: a late swap re-wraps titles, topic chips and tags and pushes the poster down, so a font that misses first paint is skipped for that page view and used from cache afterwards. Cormorant Garamond (headings) keeps `swap`.
 
 | Role | Family | Weights | Where |
 | --- | --- | --- | --- |
@@ -125,6 +125,8 @@ Base 16px, ratio 1.25 (major third). Sizes are rounded to whole pixels and set i
 | Search bar strip | 64px tall, full viewport width, input centered with `max-width: 560px`. Wordmark left-aligned at the page gutter; `auth_control` right-aligned at the page gutter. Below 768px the wordmark hides and the input fills the space between gutter and `auth_control`. |
 | Search input | 40px tall, padding `0 16px`, 1px `--rule` border. |
 | Placard panel | A `--plinth` strip with a 1px `--rule` top border, attached to the top of the poster and the same width. Title left, reaction bar right, vertically centered; below 768px the bar drops under the title. It enters with the poster (same fade and rise). Panel and poster read as one exhibit; the wall between exhibits is the divider. |
+| Topic chips | Filter row under the top bar: 32px tall, padding `0 12px`, 8px apart, 1px `--rule` border, `--radius-fixture` (square on purpose; round is for reaction pills), `--fs-small` 500 `--text-secondary`, count in `--text-faint`. Active: `--plinth` background, `--brass-dim` border, `--text-primary`. Hover: `--text-primary`, `--text-faint` border. 44px touch target from invisible padding. Row padding `16px` above, page gutter at the sides; wraps on phones. |
+| Poster tags | Under the title in the placard panel, 8px below it: 28px tall, padding `0 8px`, same border, corners, type and hover as topic chips. |
 | Share icon | 20px link icon in a 44×44px button, inline after the title and bound to its last word so it never wraps alone. `--text-secondary`, `--text-primary` on hover. "Link copied" appears beside it in `--fs-small` `--text-secondary`, fading in over `--dur-base`, for 2 seconds. |
 | Reaction pill | 48px tall (`--pill-height`), padding `0 16px 0 12px`, 8px between emoji and count, 8px between pills; below 768px padding `0 12px 0 8px` and 4px between emoji and count, so four fit per row. Pills wrap; they never scroll horizontally. |
 | Sign-in dialog | `max-width: 400px`, padding 32px (24px below 768px), 24px between stacked elements, buttons 44px tall. |
