@@ -53,8 +53,13 @@
   }
 }
 
+/* Below 768px the wordmark gives its space to the search box but stays the page's h1 for screen readers. */
 .wordmark {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
   margin: 0;
   white-space: nowrap;
   font-family: var(--font-placard);
@@ -74,7 +79,11 @@
 
 @media (min-width: 768px) {
   .wordmark {
-    display: block;
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
   }
 }
 
@@ -102,7 +111,7 @@
 }
 
 .search__input::placeholder {
-  color: var(--text-faint);
+  color: var(--text-secondary); /* on --plinth */
   opacity: 1;
 }
 

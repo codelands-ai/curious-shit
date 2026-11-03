@@ -28,7 +28,7 @@ The site is **dark only**. There is no light mode; the hallway is always after h
 | --- | --- | --- | --- |
 | `--text-primary` | `#E8E1D3` | ~14:1 | Wordmark, poster titles, input text, dialog headings, prose. Bone or old paper, never pure white. |
 | `--text-secondary` | `#A39A8A` | ~6.7:1 | Reaction counts, result status, `auth_control` label. |
-| `--text-faint` | `#847D71` | ~4.6:1 | Placeholders, disabled states, end-of-feed and no-results lines. Never smaller than 14px. |
+| `--text-faint` | `#847D71` | ~4.6:1 | Placeholders, disabled states, end-of-feed and no-results lines. Never smaller than 14px. Only on `--wall`: on `--plinth` it's 4.3:1, below AA, so use `--text-secondary` there. |
 
 ### Accents
 
@@ -38,7 +38,7 @@ The site is **dark only**. There is no light mode; the hallway is always after h
 | `--brass-dim` | `#8A6F3F` | Border of an active reaction pill. |
 | `--brass-wash` | `rgba(201, 161, 91, 0.10)` | Background of an active reaction pill. |
 | `--spot` | `rgba(255, 214, 160, 0.06)` | The picture-light glow behind each poster (see Texture). Rises to `--spot-hover` `rgba(255, 214, 160, 0.10)` on hover. |
-| `--oxblood` | `#B5523B` | Errors only, such as a failed sign-in. Text and 1px borders, never a fill. |
+| `--oxblood` | `#C76852` | Errors only, such as a failed sign-in. Text and 1px borders, never a fill. (Lightened from `#B5523B` on 2026-11-03: the old value was 3.5:1 on `--plinth`, below WCAG AA; this is 4.6:1.) |
 
 **Rules**
 
@@ -288,7 +288,7 @@ Copy this block into the root stylesheet as-is.
   --brass-wash: rgba(201, 161, 91, 0.10);
   --spot: rgba(255, 214, 160, 0.06);
   --spot-hover: rgba(255, 214, 160, 0.10);
-  --oxblood: #B5523B;
+  --oxblood: #C76852;
 
   /* Type */
   --font-display: "Cormorant Garamond", Georgia, serif;

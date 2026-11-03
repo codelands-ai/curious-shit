@@ -91,7 +91,7 @@ a {
   white-space: nowrap;
   font-size: var(--fs-small);
   line-height: 1.4;
-  color: var(--text-faint);
+  color: var(--text-secondary); /* text-faint is below AA on --plinth */
   border-bottom: 1px solid var(--rule);
 }
 
@@ -279,7 +279,7 @@ a {
   gap: var(--space-3);
   margin: 0;
   font-size: var(--fs-small);
-  color: var(--text-faint);
+  color: var(--text-secondary); /* on --plinth */
 }
 
 .signin__or::before,
@@ -306,7 +306,7 @@ a {
   margin: 0;
   font-size: var(--fs-small);
   line-height: 1.4;
-  color: var(--text-faint);
+  color: var(--text-secondary); /* text-faint is below AA on --plinth */
 }
 
 @media (prefers-reduced-motion: reduce) {
