@@ -61,7 +61,7 @@ The search fields `ocr_text` and `keywords` never appear on the card; they live 
 
 ## 6. Reactions-unavailable state
 
-When the Worker or Firebase is down, reaction bars simply don't render and no message is shown, per the graceful-degradation constraint.
+When the Worker is down, reaction bars simply don't render and no message is shown. When Firebase is down, counts still show (they come from the Worker) and only sign-in fails, with a short error in the dialog.
 
 ## Data record: Poster (static JSON index, written at build time)
 

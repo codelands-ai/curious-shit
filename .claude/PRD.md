@@ -53,7 +53,7 @@ Curious Shit is a single-curator gallery. Only the owner publishes posters; visi
 - **OCR runs at build time** (Tesseract or similar) in CI or on the owner's machine, never in the browser or the Worker.
 - **Auth:** Firebase Auth issues identities, and the Worker verifies ID tokens against Google's public keys. No user data is stored beyond the Firebase UID.
 - **Search is client-side**, using MiniSearch or Pagefind over the static index, with no server-side search service.
-- **Graceful degradation:** if the Worker or Firebase is down, scrolling and search still work and reactions are hidden.
+- **Graceful degradation:** scrolling and search never depend on the Worker or Firebase. If the Worker is down, reactions are hidden; if Firebase is down, counts still show and sign-in reports an error.
 - **Cost:** must run on Cloudflare and Firebase free tiers at launch.
 - **Image storage:** originals move from git to Cloudflare R2 once the collection passes about 1 GB.
 
@@ -122,7 +122,7 @@ The search fields `ocr_text` and `keywords` never appear on the card; they live 
 
 ### 6. Reactions-unavailable state
 
-When the Worker or Firebase is down, reaction bars simply don't render and no message is shown, per the graceful-degradation constraint.
+When the Worker is down, reaction bars simply don't render and no message is shown. When Firebase is down, counts still show (they come from the Worker) and only sign-in fails, with a short error in the dialog.
 
 ### Data record: Poster (static JSON index, written at build time)
 

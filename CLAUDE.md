@@ -19,7 +19,7 @@ Single-curator gallery. Only the owner publishes posters, through the repo and b
 Hard rules:
 
 - Must run on Cloudflare and Firebase free tiers.
-- If the Worker or Firebase is down, scrolling and search still work and reaction bars are hidden.
+- Scrolling and search never depend on the Worker or Firebase. If the Worker is down, reaction bars are hidden. If Firebase is down, counts still show and sign-in reports an error.
 - Poster IDs never change after first ingest, even if the file is renamed. Reactions depend on them.
 - No public upload path of any kind.
 
