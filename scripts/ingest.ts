@@ -10,6 +10,7 @@ import { promisify } from "node:util";
 import sharp from "sharp";
 import type { FeedPoster, IndexPoster } from "../shared/poster.ts";
 import { buildSearch } from "../shared/search.ts";
+import { OG_IMAGE_PATH } from "../shared/site.ts";
 
 const run = promisify(execFile);
 
@@ -123,6 +124,7 @@ async function main(): Promise<void> {
   );
   const feedChanged = await writeIfChanged(FEED_PATH, json({ posters: feed }));
   await writeIfChanged(SEARCH_INDEX_PATH, JSON.stringify(buildSearch(records)));
+  await writeShareImage(manifest, records);
 
   // 1.9 Report.
   const seconds = ((Date.now() - started) / 1000).toFixed(1);
@@ -365,6 +367,22 @@ async function removeStaleImages(records: PosterRecord[]): Promise<void> {
   for (const name of await readdir(IMAGES_DIR)) {
     if (!keep.has(name)) await rm(join(IMAGES_DIR, name));
   }
+}
+
+// ---------- Share image ----------
+
+// Link previews (Open Graph) show the newest poster, cropped to 1200x630 from the top.
+async function writeShareImage(manifest: Manifest, records: PosterRecord[]): Promise<void> {
+  const out = join(ROOT, "public", OG_IMAGE_PATH);
+  const newest = records[0];
+  if (!newest) return;
+  const entry = manifest.posters.find((e) => e.id === newest.id)!;
+  // Remember which poster the image was made from (outside public/, so it's never deployed).
+  const stamp = join(ROOT, ".cache/og-source.txt");
+  const source = `${entry.id} ${entry.hash}`;
+  if ((await exists(out)) && (await readFile(stamp, "utf8").catch(() => "")) === source) return;
+  await sharp(join(POSTERS_DIR, entry.file)).rotate().resize(1200, 630, { fit: "cover", position: "top" }).jpeg({ quality: 82 }).toFile(out);
+  await writeFile(stamp, source);
 }
 
 // ---------- Helpers ----------
