@@ -30,6 +30,7 @@ const posters: IndexPoster[] = Array.from({ length: POSTERS }, (_, i) => {
     ocr_text: text.slice(0, CHARS).trim(),
     src: [{ width: 800, url: `/generated/posters/poster-${i}-800.webp` }],
     avif: [{ width: 800, url: `/generated/posters/poster-${i}-800.avif` }],
+    og: `/generated/og/poster-${i}.jpg`,
     width: 1600,
     height: 1000,
     added_at: new Date(2026, 0, 1 + i).toISOString(),

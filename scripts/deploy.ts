@@ -31,6 +31,7 @@ function main(): Promise<void> | void {
   run("npx", ["tsc", "--noEmit", "-p", "worker"]);
   run("npx", ["vitest", "run", "--config", "worker/vitest.config.ts", "--silent"]);
   run("npx", ["vite", "build", "--logLevel", "warn"]);
+  run("npx", ["tsx", "scripts/permalinks.ts"]);
 
   if (!preview) {
     // Previews share the production database, so schema changes are applied only by production deploys.

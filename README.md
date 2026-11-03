@@ -25,6 +25,10 @@ If search misses a word that's on a poster, put the poster's full text in a corr
 
 Add a few words you can read on each new poster to `data/search-check.json`, then run `npm run check:search` to confirm search finds them. The PRD target is at least 90% of posters.
 
+## Sharing a poster
+
+Every poster has a permanent link, `/p/<id>` (for example `/p/geologic-time-scale`), which opens the gallery at that poster. The link icon after each title shares or copies it. Shared links show the poster's title and image in previews. A removed poster's link shows the 404 page. `sitemap.xml` lists every poster for search engines.
+
 ## Trying changes before they go live
 
 ```sh

@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite",
     "ingest": "tsx scripts/ingest.ts",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && tsx scripts/permalinks.ts",
     "preview": "vite preview",
     "bench:search": "tsx scripts/bench-search.ts",
     "deploy": "tsx scripts/deploy.ts",

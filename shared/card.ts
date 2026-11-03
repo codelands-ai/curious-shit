@@ -4,6 +4,31 @@
 import { POSTER_SIZES, type FeedPoster } from "./poster.ts";
 import { REACTIONS } from "./reactions.ts";
 
+/**
+ * Attributes for <link rel="preload"> of a poster's image: the format the <picture> will pick (AVIF if there
+ * is one; browsers without AVIF skip a typed preload), at high priority. Marked data-poster-preload so
+ * scripts/permalinks.ts can swap it per page.
+ */
+export function posterPreloadAttrs(poster: FeedPoster): Record<string, string> {
+  const variants = [...(poster.avif?.length ? poster.avif : poster.src)].sort((a, b) => a.width - b.width);
+  return {
+    rel: "preload",
+    as: "image",
+    ...(poster.avif?.length ? { type: "image/avif" } : {}),
+    href: variants[variants.length - 1]!.url,
+    imagesrcset: srcset(variants),
+    imagesizes: POSTER_SIZES,
+    fetchpriority: "high",
+    "data-poster-preload": "",
+  };
+}
+
+export function attrsHtml(attrs: Record<string, string | number>): string {
+  return Object.entries(attrs)
+    .map(([k, v]) => (v === "" ? k : `${k}="${escape(String(v))}"`))
+    .join(" ");
+}
+
 export function srcset(variants: FeedPoster["src"]): string {
   return [...variants]
     .sort((a, b) => a.width - b.width)
@@ -31,12 +56,30 @@ export function cardHtml(poster: FeedPoster, first: boolean): string {
   const classes = first ? "exhibit is-lit is-still" : "exhibit";
   return (
     `<figure class="${classes}" data-poster-id="${escape(poster.id)}">` +
-    `<figcaption class="exhibit__header"><span class="exhibit__title">${escape(poster.title)}</span>${reactionBarHtml()}</figcaption>` +
+    `<figcaption class="exhibit__header"><span class="exhibit__heading">${headingHtml(poster)}</span>${reactionBarHtml()}</figcaption>` +
     // AVIF where supported (about 40% smaller), WebP everywhere else.
     `<div class="exhibit__frame"><picture>` +
     (poster.avif?.length ? `<source type="image/avif" srcset="${escape(srcset(poster.avif))}" sizes="${escape(POSTER_SIZES)}">` : "") +
     `<img ${attrs}></picture></div>` +
     `</figure>`
+  );
+}
+
+// The title, with its last word and the share icon bound together so the icon never wraps onto a line alone.
+function headingHtml(poster: FeedPoster): string {
+  const words = poster.title.split(" ");
+  const last = words.pop() ?? "";
+  const lead = words.length ? `${escape(words.join(" "))} ` : "";
+  return `<span class="exhibit__title">${lead}<span class="exhibit__last">${escape(last)}${shareButtonHtml(poster)}</span></span>`;
+}
+
+// A link icon next to the title; src/share.ts opens the share sheet or copies the poster's permalink.
+function shareButtonHtml(poster: FeedPoster): string {
+  return (
+    `<button type="button" class="exhibit__share" aria-label="Share ${escape(poster.title)}">` +
+    `<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">` +
+    `<path d="M8.5 11.5a3.5 3.5 0 0 0 5 0l2.5-2.5a3.5 3.5 0 0 0-5-5l-1 1"/><path d="M11.5 8.5a3.5 3.5 0 0 0-5 0L4 11a3.5 3.5 0 0 0 5 5l1-1"/>` +
+    `</svg></button>`
   );
 }
 
@@ -51,6 +94,6 @@ function reactionBarHtml(): string {
   return `<div class="reactions is-pending" role="group" aria-label="Reactions">${pills}</div>`;
 }
 
-function escape(text: string): string {
+export function escape(text: string): string {
   return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
