@@ -58,7 +58,8 @@ export function cardHtml(poster: FeedPoster, first: boolean): string {
     `<figure class="${classes}" data-poster-id="${escape(poster.id)}">` +
     `<figcaption class="exhibit__header"><div class="exhibit__label"><span class="exhibit__heading">${headingHtml(poster)}</span>${tagsHtml(poster)}</div>${reactionBarHtml()}</figcaption>` +
     // AVIF where supported (about 40% smaller), WebP everywhere else.
-    `<div class="exhibit__frame"><picture>` +
+    // The poster opens the full-screen viewer (src/viewer.ts): focusable, with an accessible name.
+    `<div class="exhibit__frame" role="button" tabindex="0" aria-label="View ${escape(poster.title)} full screen" aria-haspopup="dialog"><picture>` +
     (poster.avif?.length ? `<source type="image/avif" srcset="${escape(srcset(poster.avif))}" sizes="${escape(POSTER_SIZES)}">` : "") +
     `<img ${attrs}></picture></div>` +
     `</figure>`

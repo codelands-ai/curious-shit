@@ -27,6 +27,8 @@ export interface FeedPoster {
   avif: PosterVariant[];
   /** 1200×630 link-preview image (Open Graph), cropped from the top of the poster. */
   og: string;
+  /** The sharpest version, for the full-screen viewer only (never in the gallery's srcset). */
+  zoom: { width: number; webp: string; avif: string };
   width: number;
   height: number;
   added_at: string;

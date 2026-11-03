@@ -71,6 +71,15 @@ The search fields `ocr_text` and `keywords` never appear on the card; they live 
 
 When the Worker is down, reaction bars simply don't render and no message is shown. When Firebase is down, counts still show (they come from the Worker) and only sign-in fails, with a short error in the dialog.
 
+## Full-screen viewer (opened by tapping a poster)
+
+| Field | Description | Constraints |
+| --- | --- | --- |
+| `title` | Poster title in the top bar | Small caps; one line, truncated with an ellipsis. |
+| `image` | The poster | The sharpest version (`zoom` in the feed), shown at once from the gallery's copy and swapped in when loaded. Alt text from the poster record. |
+| `controls` | Zoom out, level, zoom in, Fit, Full screen (desktop only), Close | Level is relative to fit ("100%" = whole poster). Zoom stops at 2 screen pixels per image pixel. |
+| `closing` | Close, Escape, backdrop tap when not zoomed, or Back | Opening adds a history step, so Back closes it. Focus and scroll position return to the poster. |
+
 ## Permalink page (one per poster, at `/p/<id>`)
 
 Static HTML written after the build (`scripts/permalinks.ts`), so link previews work without JavaScript.
@@ -109,6 +118,7 @@ Ingest rejects unknown fields, unknown tags (suggesting the closest), over-long 
 | `src` | WebP variants | Paths for each width, e.g. 800, 1600 and 2400 pixels, plus the original width when it's under 2400. |
 | `avif` | AVIF variants | Same widths as `src`; about 45% smaller. Browsers without AVIF use `src`. |
 | `og` | Link-preview image | 1200×630 JPEG cropped from the top of the poster, named with a content hash. |
+| `zoom` | Viewer image | `{ width, webp, avif }`: the original width up to 4096px. A separate zoom-only size exists only when the original is wider than 2400px; otherwise it's the largest gallery size. Never in the gallery's `srcset`. |
 | `width` / `height` | Original size | Whole numbers, in pixels. |
 | `added_at` | Publish date | ISO 8601, recorded in the manifest at first ingest. Feed shows newest first. |
 

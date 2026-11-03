@@ -43,6 +43,26 @@ startAccount();
 startReactions();
 startSharing();
 
+// Tapping a poster (or Enter/Space on it) opens the full-screen viewer, loaded on first use.
+const openPoster = async (frame: HTMLElement) => {
+  const card = frame.closest<HTMLElement>(".exhibit");
+  const poster = ((await feedReady) ?? []).find((p) => p.id === card?.dataset.posterId);
+  if (!card || !poster) return;
+  const { openViewer } = await import("./viewer.ts");
+  openViewer(poster, card);
+};
+document.addEventListener("click", (e) => {
+  const frame = (e.target as Element).closest<HTMLElement>(".exhibit__frame");
+  if (frame) void openPoster(frame);
+});
+document.addEventListener("keydown", (e) => {
+  const frame = (e.target as Element).closest?.<HTMLElement>(".exhibit__frame");
+  if (frame && (e.key === "Enter" || e.key === " ")) {
+    e.preventDefault();
+    void openPoster(frame);
+  }
+});
+
 // Topic links (the filter row and the tags on each poster) filter in place instead of reloading.
 document.addEventListener("click", (e) => {
   const link = (e.target as Element).closest<HTMLAnchorElement>("a[data-tag]");

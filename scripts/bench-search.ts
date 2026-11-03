@@ -33,6 +33,7 @@ const posters: IndexPoster[] = Array.from({ length: POSTERS }, (_, i) => {
     src: [{ width: 800, url: `/generated/posters/poster-${i}-800.webp` }],
     avif: [{ width: 800, url: `/generated/posters/poster-${i}-800.avif` }],
     og: `/generated/og/poster-${i}.jpg`,
+    zoom: { width: 800, webp: `/generated/posters/poster-${i}-800.webp`, avif: `/generated/posters/poster-${i}-800.avif` },
     width: 1600,
     height: 1000,
     added_at: new Date(2026, 0, 1 + i).toISOString(),

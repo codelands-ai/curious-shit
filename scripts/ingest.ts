@@ -33,6 +33,8 @@ const IMAGES_URL = "/generated/posters";
 const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 const MIN_ASPECT = 1.2;
 const WIDTHS = [800, 1600, 2400];
+// Full-screen viewer only: originals wider than the largest gallery width get one more size, up to this.
+const ZOOM_MAX_WIDTH = 4096;
 const WEBP_QUALITY = 80;
 // AVIF q50 matches WebP q80 for poster text at about 55% of the bytes (phase 7 measurement).
 const AVIF_QUALITY = 50;
@@ -116,7 +118,7 @@ async function main(): Promise<void> {
   await mkdir(OG_DIR, { recursive: true });
   await mkdir(OCR_CACHE_DIR, { recursive: true });
   const records = await mapPool(live, availableParallelism(), async ({ entry, scan: s }) => {
-    const [ocr_text, { src, avif }, og] = await Promise.all([ocrText(s), writeVariants(entry.id, s), writeShareImage(entry.id, s)]);
+    const [ocr_text, { src, avif, zoom }, og] = await Promise.all([ocrText(s), writeVariants(entry.id, s), writeShareImage(entry.id, s)]);
     const words = filenameWords(s.file);
     const meta = sidecars.get(s.file);
     const title = meta?.title ?? makeTitle(words);
@@ -131,6 +133,7 @@ async function main(): Promise<void> {
       src,
       avif,
       og,
+      zoom,
       width: s.width,
       height: s.height,
       added_at: entry.added_at,
@@ -144,7 +147,7 @@ async function main(): Promise<void> {
   const manifestChanged = await writeIfChanged(MANIFEST_PATH, json(manifest));
   const indexChanged = await writeIfChanged(INDEX_PATH, json({ posters: records }));
   const feed = records.map(
-    ({ id, title, alt, tags, description, src, avif, og, width, height, added_at }): FeedPoster => ({
+    ({ id, title, alt, tags, description, src, avif, og, zoom, width, height, added_at }): FeedPoster => ({
       id,
       title,
       alt,
@@ -153,6 +156,7 @@ async function main(): Promise<void> {
       src,
       avif,
       og,
+      zoom,
       width,
       height,
       added_at,
@@ -477,15 +481,17 @@ function makeKeywords(words: string[]): string[] {
 
 // File names include a short content hash, so a replaced poster gets new URLs and the
 // old ones can be cached forever.
-async function writeVariants(id: string, s: ScannedFile): Promise<Pick<PosterRecord, "src" | "avif">> {
+async function writeVariants(id: string, s: ScannedFile): Promise<Pick<PosterRecord, "src" | "avif" | "zoom">> {
   // Standard widths below the original, plus the original itself when it's under the largest
   // standard width, so the sharpest version is never thrown away (and nothing is upscaled).
   const widths = WIDTHS.filter((w) => w < s.width);
   if (s.width <= WIDTHS[WIDTHS.length - 1]!) widths.push(s.width);
   const short = s.hash.slice(0, 8);
-  const write = (format: "webp" | "avif") =>
+  const largest = WIDTHS[WIDTHS.length - 1]!;
+  const zoomWidth = s.width > largest ? Math.min(s.width, ZOOM_MAX_WIDTH) : null;
+  const write = (format: "webp" | "avif", list: number[] = widths) =>
     Promise.all(
-      widths.map(async (width) => {
+      list.map(async (width) => {
         const name = `${id}-${short}-${width}.${format}`;
         const out = join(IMAGES_DIR, name);
         if (!(await exists(out))) {
@@ -499,12 +505,21 @@ async function writeVariants(id: string, s: ScannedFile): Promise<Pick<PosterRec
         return { width, url: `${IMAGES_URL}/${name}` };
       }),
     );
-  const [src, avif] = await Promise.all([write("webp"), write("avif")]);
-  return { src, avif };
+  const [src, avif, zoomWebp, zoomAvif] = await Promise.all([
+    write("webp"),
+    write("avif"),
+    write("webp", zoomWidth ? [zoomWidth] : []),
+    write("avif", zoomWidth ? [zoomWidth] : []),
+  ]);
+  // Without a zoom-only size, the sharpest gallery size is the original width (or 2400px).
+  const zoom = zoomWidth
+    ? { width: zoomWidth, webp: zoomWebp[0]!.url, avif: zoomAvif[0]!.url }
+    : { width: src[src.length - 1]!.width, webp: src[src.length - 1]!.url, avif: avif[avif.length - 1]!.url };
+  return { src, avif, zoom };
 }
 
 async function removeStaleImages(records: PosterRecord[]): Promise<void> {
-  const keep = new Set(records.flatMap((r) => [...r.src, ...r.avif].map((v) => basename(v.url))));
+  const keep = new Set(records.flatMap((r) => [...r.src, ...r.avif].map((v) => basename(v.url)).concat(basename(r.zoom.webp), basename(r.zoom.avif))));
   for (const name of await readdir(IMAGES_DIR)) {
     if (!keep.has(name)) await rm(join(IMAGES_DIR, name));
   }
