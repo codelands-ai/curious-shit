@@ -23,7 +23,7 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-01 | Phase 5: Firebase sign-in (Google popup, email link), auth control and dialog, privacy page | PR #9 |
 | 2026-11-02 | Phase 6: reactions Worker + D1, reaction bar in a placard panel above each poster, Worker tests, delete-user script | PR #10 |
 | 2026-11-03 | Phase 7: success criteria met with evidence; AVIF, self-hosted fonts, pre-built search index, sparse OCR, accessibility fixes, page basics, CSP, README | PR #11 |
-| 2026-11-03 | Phase 8: permalinks with per-poster preview cards, share button, sitemap | `phase-8-permalinks` |
+| 2026-11-03 | Phase 8: permalinks with per-poster preview cards, share button, sitemap | PR #13 |
 | 2026-11-01 | First poster published with `npm run deploy`: `jacob-esau.webp`, live and searchable in 12s | commit `98a8732` |
 
 ## Decisions
@@ -74,6 +74,10 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-03 | Preview text: "<title> · Curious Shit" with the site description; image is a 1200×630 crop of the poster | OCR snippets are too messy for previews |
 | 2026-11-03 | A share button (link icon) in each placard panel: native share sheet on phones, copy on desktop | The address bar doesn't change while scrolling, so there's nothing else to copy |
 | 2026-11-03 | Cormorant SC (titles, wordmark) is preloaded with `font-display: optional` instead of `swap` | A late swap re-wrapped long titles and shifted the poster (CLS up to 0.14). Trade-off: on a slow first visit, titles may show in the fallback serif for that page |
+| 2026-11-03 | Sidecar metadata is YAML (`posters/<name>.yml`): `title`, `alt`, `tags`, `description` | Easy to hand-edit; unknown fields and over-long values fail the publish |
+| 2026-11-03 | Tags come from a fixed list in `data/tags.yml`; unknown tags fail the publish with a suggestion | Catches typos before they become new tags |
+| 2026-11-03 | Filtering: a tag row under the top bar plus clickable tags on each poster; `?tag=` in the URL, combinable with search | Owner's choice |
+| 2026-11-03 | First titles and tags: Geologic Time Scale (Deep time, Earth science); The Gnostic Cosmos (Religion, Gnosticism, Cosmology); Esau and Jacob (Religion, Bible); Resurrection Overview: Jehovah's Witnesses vs. Seventh-day Adventists (Religion, Christianity) | Owner approved; titles taken from each poster's own heading |
 | 2026-11-01 | `.claude/PRD.md` is the only PRD; the claude.ai shared copy is dropped and no longer maintained | The repo file is versioned and read by every session; one copy can't drift |
 
 ## Plan
@@ -93,6 +97,7 @@ Each phase ends with something that can be seen or tested. Phases and steps are 
 | 6 | Reactions | done | Worker + D1 endpoint, reaction bar wired up, rate limiting |
 | 7 | Launch readiness | done | Graceful degradation, success criteria checked (privacy page moved to phase 5) |
 | 8 | Poster permalinks | done | Every poster has its own link with a real preview card; the gallery opens at that poster |
+| 9 | Topic tags and titles | in progress | Sidecar files give posters proper titles, alt text and tags; visitors filter by tag |
 
 Detailed steps for each phase get added below as they're confirmed.
 
@@ -335,6 +340,21 @@ curious-shit/
 - Browser, 16/16: a permalink starts at that poster and continues in feed order. The server-rendered card is adopted (9 cards, same element), reaction bars load, and there's no layout shift. The tab title is the poster's. Desktop share copies the permalink and shows "Link copied", then hides it. Phone share calls the native sheet with title and URL. 44px target, no sideways scroll. Search works on a permalink and clearing returns to its order. The home page still starts at the newest. axe reports 0 issues.
 - Lighthouse mobile, devtools throttling: long-title permalink LCP 1.81–1.87s (five runs), CLS 0; home and the Gnostic Cosmology permalink about 1.85–1.97s, CLS 0. Accessibility, Best Practices 100. SEO is 69 on previews only, because Cloudflare sends `x-robots-tag: noindex` there; production sends none.
 - Found and fixed: the title font swapping in late re-wrapped long titles and pushed the poster down (CLS 0.05–0.14). Cormorant SC is now preloaded and uses `font-display: optional`.
+
+### Phase 9: Topic tags and titles (confirmed 2026-11-03)
+
+| # | Step | Detail | Status |
+| --- | --- | --- | --- |
+| 9.1 | Sidecar file | Optional `posters/<name>.yml`: `title` (80 max), `alt` (125 max, defaults to title), `tags`, `description` (link-preview text). Validated by ingest. | confirmed |
+| 9.2 | Tag list | `data/tags.yml`: slug to display name. Unknown tags fail with the closest match suggested. | confirmed |
+| 9.3 | Tags on posters | Small square tags under the title in the placard panel, each a link to its filter. | confirmed |
+| 9.4 | Filter row | All tags with counts under the top bar; filters like search (fade, jump, "N exhibits · Tag", back wall); `?tag=`; combines with search; wraps on phones. | confirmed |
+| 9.5 | Search | Tag names searchable, weighted like keywords. | confirmed |
+| 9.6 | Stable links | Title changes don't touch IDs, permalinks or reactions; permalink pages use the new title and description. | confirmed |
+| 9.7 | First tags and titles | Sidecars for the four posters (see Decisions). | confirmed |
+| 9.8 | Tests and docs | Ingest validation, filter/URL/search behaviour, layout, CLS, accessibility; content model, design standard, README. | confirmed |
+
+**Done when:** the four posters show their new titles and tags, filtering by any tag (alone or with search) shows exactly the tagged posters with a shareable URL, and a bad sidecar fails ingest with a clear message.
 
 ## Environment
 
