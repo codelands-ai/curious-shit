@@ -231,8 +231,9 @@ node_modules/
 firebase-debug*.log
 service-account*.json
 
-# Claude Code per-user settings
+# Claude Code per-user settings and agent worktrees
 .claude/settings.local.json
+.claude/worktrees/
 
 # OS / editor junk
 .DS_Store
