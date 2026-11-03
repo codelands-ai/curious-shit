@@ -2,6 +2,8 @@ import { startAccount } from "./account.ts";
 import { attachReactions, startReactions } from "./reactions.ts";
 import { Gallery, LINES, loadFeed } from "./gallery.ts";
 import { hasInitialQuery, startSearch } from "./search.ts";
+import { startSharing } from "./share.ts";
+import type { FeedPoster } from "../shared/poster.ts";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -9,8 +11,16 @@ const gallery = new Gallery($("feed"), $("feed-status"), attachReactions);
 const searching = hasInitialQuery();
 if (searching) gallery.showLoading();
 
+// On a permalink (/p/<id>) the hallway starts at that poster and carries on in feed order, looping.
+function startingAt(posters: FeedPoster[]): FeedPoster[] {
+  const match = /^\/p\/([^/]+)$/.exec(location.pathname);
+  const index = match ? posters.findIndex((p) => p.id === decodeURIComponent(match[1]!)) : -1;
+  return index > 0 ? [...posters.slice(index), ...posters.slice(0, index)] : posters;
+}
+
 const feedReady = loadFeed().then(
-  (posters) => {
+  (feed) => {
+    const posters = startingAt(feed);
     if (!searching) gallery.show(posters, { loop: true, entrance: true });
     return posters;
   },
@@ -31,3 +41,4 @@ startSearch(gallery, feedReady, {
 
 startAccount();
 startReactions();
+startSharing();

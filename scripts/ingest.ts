@@ -10,7 +10,6 @@ import { promisify } from "node:util";
 import sharp from "sharp";
 import type { FeedPoster, IndexPoster } from "../shared/poster.ts";
 import { buildSearch } from "../shared/search.ts";
-import { OG_IMAGE_PATH } from "../shared/site.ts";
 
 const run = promisify(execFile);
 
@@ -23,6 +22,8 @@ const OCR_VERSION = "v2";
 const OCR_CACHE_DIR = join(ROOT, ".cache/ocr", OCR_VERSION);
 const GENERATED_DIR = join(ROOT, "public/generated");
 const IMAGES_DIR = join(GENERATED_DIR, "posters");
+const OG_DIR = join(GENERATED_DIR, "og");
+const OG_URL = "/generated/og";
 const INDEX_PATH = join(GENERATED_DIR, "index.json");
 const FEED_PATH = join(GENERATED_DIR, "feed.json");
 const SEARCH_INDEX_PATH = join(GENERATED_DIR, "search-index.json");
@@ -96,9 +97,10 @@ async function main(): Promise<void> {
 
   // 1.5–1.7 for each live poster.
   await mkdir(IMAGES_DIR, { recursive: true });
+  await mkdir(OG_DIR, { recursive: true });
   await mkdir(OCR_CACHE_DIR, { recursive: true });
   const records = await mapPool(live, availableParallelism(), async ({ entry, scan: s }) => {
-    const [ocr_text, { src, avif }] = await Promise.all([ocrText(s), writeVariants(entry.id, s)]);
+    const [ocr_text, { src, avif }, og] = await Promise.all([ocrText(s), writeVariants(entry.id, s), writeShareImage(entry.id, s)]);
     const words = filenameWords(s.file);
     return {
       id: entry.id,
@@ -107,6 +109,7 @@ async function main(): Promise<void> {
       ocr_text,
       src,
       avif,
+      og,
       width: s.width,
       height: s.height,
       added_at: entry.added_at,
@@ -120,11 +123,10 @@ async function main(): Promise<void> {
   const manifestChanged = await writeIfChanged(MANIFEST_PATH, json(manifest));
   const indexChanged = await writeIfChanged(INDEX_PATH, json({ posters: records }));
   const feed = records.map(
-    ({ id, title, src, avif, width, height, added_at }): FeedPoster => ({ id, title, src, avif, width, height, added_at }),
+    ({ id, title, src, avif, og, width, height, added_at }): FeedPoster => ({ id, title, src, avif, og, width, height, added_at }),
   );
   const feedChanged = await writeIfChanged(FEED_PATH, json({ posters: feed }));
   await writeIfChanged(SEARCH_INDEX_PATH, JSON.stringify(buildSearch(records)));
-  await writeShareImage(manifest, records);
 
   // 1.9 Report.
   const seconds = ((Date.now() - started) / 1000).toFixed(1);
@@ -367,22 +369,24 @@ async function removeStaleImages(records: PosterRecord[]): Promise<void> {
   for (const name of await readdir(IMAGES_DIR)) {
     if (!keep.has(name)) await rm(join(IMAGES_DIR, name));
   }
+  const keepOg = new Set(records.map((r) => basename(r.og)));
+  for (const name of await readdir(OG_DIR)) {
+    if (!keepOg.has(name)) await rm(join(OG_DIR, name));
+  }
 }
 
 // ---------- Share image ----------
 
-// Link previews (Open Graph) show the newest poster, cropped to 1200x630 from the top.
-async function writeShareImage(manifest: Manifest, records: PosterRecord[]): Promise<void> {
-  const out = join(ROOT, "public", OG_IMAGE_PATH);
-  const newest = records[0];
-  if (!newest) return;
-  const entry = manifest.posters.find((e) => e.id === newest.id)!;
-  // Remember which poster the image was made from (outside public/, so it's never deployed).
-  const stamp = join(ROOT, ".cache/og-source.txt");
-  const source = `${entry.id} ${entry.hash}`;
-  if ((await exists(out)) && (await readFile(stamp, "utf8").catch(() => "")) === source) return;
-  await sharp(join(POSTERS_DIR, entry.file)).rotate().resize(1200, 630, { fit: "cover", position: "top" }).jpeg({ quality: 82 }).toFile(out);
-  await writeFile(stamp, source);
+// Link previews (Open Graph): each poster cropped to 1200x630 from the top. The content hash in the name
+// means a replaced poster gets a fresh preview and the old one can be cached forever.
+async function writeShareImage(id: string, s: ScannedFile): Promise<string> {
+  const name = `${id}-${s.hash.slice(0, 8)}.jpg`;
+  const out = join(OG_DIR, name);
+  if (!(await exists(out))) {
+    await sharp(join(POSTERS_DIR, s.file)).rotate().resize(1200, 630, { fit: "cover", position: "top" }).jpeg({ quality: 82 }).toFile(out);
+    counts.imagesWritten++;
+  }
+  return `${OG_URL}/${name}`;
 }
 
 // ---------- Helpers ----------

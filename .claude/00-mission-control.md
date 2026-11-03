@@ -22,7 +22,8 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-01 | Phase 4: Cloudflare config, caching headers, `npm run deploy` / `deploy:preview`, first production deploy, mobile LCP fixes | PR #7 |
 | 2026-11-01 | Phase 5: Firebase sign-in (Google popup, email link), auth control and dialog, privacy page | PR #9 |
 | 2026-11-02 | Phase 6: reactions Worker + D1, reaction bar in a placard panel above each poster, Worker tests, delete-user script | PR #10 |
-| 2026-11-03 | Phase 7: success criteria met with evidence; AVIF, self-hosted fonts, pre-built search index, sparse OCR, accessibility fixes, page basics, CSP, README | `phase-7-launch-readiness` |
+| 2026-11-03 | Phase 7: success criteria met with evidence; AVIF, self-hosted fonts, pre-built search index, sparse OCR, accessibility fixes, page basics, CSP, README | PR #11 |
+| 2026-11-03 | Phase 8: permalinks with per-poster preview cards, share button, sitemap | `phase-8-permalinks` |
 | 2026-11-01 | First poster published with `npm run deploy`: `jacob-esau.webp`, live and searchable in 12s | commit `98a8732` |
 
 ## Decisions
@@ -68,6 +69,11 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-03 | The search input shows only its brass border on focus; every other control keeps the standard focus outline | Resolves the phase 3 double ring |
 | 2026-11-03 | Phase 7 includes the launch polish (accessibility, page basics, CSP, README) | Owner's choice |
 | 2026-11-03 | Hard rule reworded: if the Worker is down, bars are hidden; if Firebase is down, counts still show and sign-in reports an error (CLAUDE.md, PRD, content model) | Owner's choice: counts come from our own Worker, so hiding them when only sign-in is down would remove working information |
+| 2026-11-03 | Permalinks are `/p/<id>`, one static HTML page per poster written after the build | Link-preview bots don't run JavaScript, and the stack forbids server rendering |
+| 2026-11-03 | A permalink opens the feed at that poster and continues in feed order, looping | Keeps walking the hallway from where the link dropped you |
+| 2026-11-03 | Preview text: "<title> · Curious Shit" with the site description; image is a 1200×630 crop of the poster | OCR snippets are too messy for previews |
+| 2026-11-03 | A share button (link icon) in each placard panel: native share sheet on phones, copy on desktop | The address bar doesn't change while scrolling, so there's nothing else to copy |
+| 2026-11-03 | Cormorant SC (titles, wordmark) is preloaded with `font-display: optional` instead of `swap` | A late swap re-wrapped long titles and shifted the poster (CLS up to 0.14). Trade-off: on a slow first visit, titles may show in the fallback serif for that page |
 | 2026-11-01 | `.claude/PRD.md` is the only PRD; the claude.ai shared copy is dropped and no longer maintained | The repo file is versioned and read by every session; one copy can't drift |
 
 ## Plan
@@ -86,6 +92,7 @@ Each phase ends with something that can be seen or tested. Phases and steps are 
 | 5 | Sign-in | done | Firebase Auth with Google and email magic link |
 | 6 | Reactions | done | Worker + D1 endpoint, reaction bar wired up, rate limiting |
 | 7 | Launch readiness | done | Graceful degradation, success criteria checked (privacy page moved to phase 5) |
+| 8 | Poster permalinks | done | Every poster has its own link with a real preview card; the gallery opens at that poster |
 
 Detailed steps for each phase get added below as they're confirmed.
 
@@ -308,6 +315,26 @@ curious-shit/
 - Page basics: SVG favicon and touch icon, meta description, Open Graph and Twitter tags with a 1200×630 share image of the newest poster (made by ingest), canonical URLs, and a 404 page ("Nothing hangs here") with status 404.
 - CSP: `default-src 'self'` plus only Firebase sign-in's origins. No violations across the feed, voting, search, privacy, 404 and the Google popup and frame. The owner confirmed Google sign-in works under the CSP on the phase 7 preview (2026-11-03), which runs the same headers as production.
 - README: owner's guide to publishing, corrections, previews, deletion and local dev.
+
+### Phase 8: Poster permalinks (done 2026-11-03)
+
+| # | Step | Detail | Status |
+| --- | --- | --- | --- |
+| 8.1 | One page per poster | `scripts/permalinks.ts` writes `dist/p/<id>.html` from the built gallery page: title, preview tags, canonical, that poster's card pre-rendered and its image preloaded. | done |
+| 8.2 | Preview image per poster | Ingest writes `public/generated/og/<id>-<hash8>.jpg` (1200×630, top crop) for each poster; the home page uses the newest one. | done |
+| 8.3 | Opens in the scroll | On `/p/<id>` the feed starts at that poster and continues in feed order, looping. | done |
+| 8.4 | Share button | Link icon in each placard panel; native share on touch devices, copy plus "Link copied" elsewhere. | done |
+| 8.5 | Stable and gone links | IDs never change; removed posters' links get the 404 page. | done |
+| 8.6 | Sitemap | `sitemap.xml` and `robots.txt`. | done |
+| 8.7 | Tests and docs | Permalink, preview tags, share, 404, Lighthouse on a permalink; content model, design standard, README. | done |
+
+**Done when:** sharing `/p/<id>` shows that poster's title and image in a link preview, opening it shows that poster first with the gallery continuing below, and a permalink meets the 2.5s LCP target.
+
+**Verified 2026-11-03** (preview):
+- Over plain HTTP, as a link-preview bot sees them: `/p/<id>` pages return 200 with the poster's title, Open Graph and Twitter tags, and a 1200×630 preview image (cached for a year). `/p/not-a-poster` returns the 404 page. `sitemap.xml` and `robots.txt` are served.
+- Browser, 16/16: a permalink starts at that poster and continues in feed order. The server-rendered card is adopted (9 cards, same element), reaction bars load, and there's no layout shift. The tab title is the poster's. Desktop share copies the permalink and shows "Link copied", then hides it. Phone share calls the native sheet with title and URL. 44px target, no sideways scroll. Search works on a permalink and clearing returns to its order. The home page still starts at the newest. axe reports 0 issues.
+- Lighthouse mobile, devtools throttling: long-title permalink LCP 1.81–1.87s (five runs), CLS 0; home and the Gnostic Cosmology permalink about 1.85–1.97s, CLS 0. Accessibility, Best Practices 100. SEO is 69 on previews only, because Cloudflare sends `x-robots-tag: noindex` there; production sends none.
+- Found and fixed: the title font swapping in late re-wrapped long titles and pushed the poster down (CLS 0.05–0.14). Cormorant SC is now preloaded and uses `font-display: optional`.
 
 ## Environment
 
