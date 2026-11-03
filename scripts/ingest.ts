@@ -9,23 +9,32 @@ import { basename, extname, join } from "node:path";
 import { promisify } from "node:util";
 import sharp from "sharp";
 import type { FeedPoster, IndexPoster } from "../shared/poster.ts";
+import { buildSearch } from "../shared/search.ts";
+import { OG_IMAGE_PATH } from "../shared/site.ts";
 
 const run = promisify(execFile);
 
 const ROOT = new URL("..", import.meta.url).pathname;
 const POSTERS_DIR = join(ROOT, "posters");
 const MANIFEST_PATH = join(ROOT, "data/manifest.json");
-const OCR_CACHE_DIR = join(ROOT, ".cache/ocr");
+// Bump OCR_VERSION when the OCR method changes, so every poster is read again.
+// v2 (phase 7): paragraph mode plus sparse-text mode, which catches map labels and scattered words.
+const OCR_VERSION = "v2";
+const OCR_CACHE_DIR = join(ROOT, ".cache/ocr", OCR_VERSION);
 const GENERATED_DIR = join(ROOT, "public/generated");
 const IMAGES_DIR = join(GENERATED_DIR, "posters");
 const INDEX_PATH = join(GENERATED_DIR, "index.json");
 const FEED_PATH = join(GENERATED_DIR, "feed.json");
+const SEARCH_INDEX_PATH = join(GENERATED_DIR, "search-index.json");
 const IMAGES_URL = "/generated/posters";
 
 const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 const MIN_ASPECT = 1.2;
 const WIDTHS = [800, 1600, 2400];
 const WEBP_QUALITY = 80;
+// AVIF q50 matches WebP q80 for poster text at about 55% of the bytes (phase 7 measurement).
+const AVIF_QUALITY = 50;
+const AVIF_EFFORT = 4;
 const OCR_MIN_WIDTH = 3000;
 const OCR_MAX_CHARS = 5000;
 const TITLE_MAX_CHARS = 80;
@@ -89,7 +98,7 @@ async function main(): Promise<void> {
   await mkdir(IMAGES_DIR, { recursive: true });
   await mkdir(OCR_CACHE_DIR, { recursive: true });
   const records = await mapPool(live, availableParallelism(), async ({ entry, scan: s }) => {
-    const [ocr_text, src] = await Promise.all([ocrText(s), writeVariants(entry.id, s)]);
+    const [ocr_text, { src, avif }] = await Promise.all([ocrText(s), writeVariants(entry.id, s)]);
     const words = filenameWords(s.file);
     return {
       id: entry.id,
@@ -97,6 +106,7 @@ async function main(): Promise<void> {
       keywords: makeKeywords(words),
       ocr_text,
       src,
+      avif,
       width: s.width,
       height: s.height,
       added_at: entry.added_at,
@@ -110,9 +120,11 @@ async function main(): Promise<void> {
   const manifestChanged = await writeIfChanged(MANIFEST_PATH, json(manifest));
   const indexChanged = await writeIfChanged(INDEX_PATH, json({ posters: records }));
   const feed = records.map(
-    ({ id, title, src, width, height, added_at }): FeedPoster => ({ id, title, src, width, height, added_at }),
+    ({ id, title, src, avif, width, height, added_at }): FeedPoster => ({ id, title, src, avif, width, height, added_at }),
   );
   const feedChanged = await writeIfChanged(FEED_PATH, json({ posters: feed }));
+  await writeIfChanged(SEARCH_INDEX_PATH, JSON.stringify(buildSearch(records)));
+  await writeShareImage(manifest, records);
 
   // 1.9 Report.
   const seconds = ((Date.now() - started) / 1000).toFixed(1);
@@ -255,17 +267,35 @@ async function ocrText(s: ScannedFile): Promise<string> {
       .resize({ width: Math.max(s.width, OCR_MIN_WIDTH) })
       .png()
       .toFile(png);
-    const { stdout } = await run("tesseract", [png, "stdout", "-l", "eng"], {
-      maxBuffer: 16 * 1024 * 1024,
-      env: { ...process.env, OMP_THREAD_LIMIT: "1" },
-    });
-    const text = cleanText(stdout);
+    const tesseract = (psm: string) =>
+      run("tesseract", [png, "stdout", "-l", "eng", "--psm", psm], {
+        maxBuffer: 16 * 1024 * 1024,
+        env: { ...process.env, OMP_THREAD_LIMIT: "1" },
+      }).then((r) => r.stdout);
+    // Paragraph mode (3) reads body text in order; sparse mode (11) finds labels on maps and diagrams.
+    const [paragraphs, sparse] = await Promise.all([tesseract("3"), tesseract("11")]);
+    const text = cleanText(mergeOcr(paragraphs, sparse));
     await writeFile(cached, text);
     counts.ocrTesseract++;
     return text;
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+}
+
+/** The paragraph text, followed by any words only sparse mode found (so the 5,000-character cap keeps the prose). */
+function mergeOcr(paragraphs: string, sparse: string): string {
+  const key = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+  const seen = new Set(paragraphs.split(/\s+/).map(key).filter(Boolean));
+  const extra: string[] = [];
+  for (const token of sparse.split(/\s+/)) {
+    const k = key(token);
+    if (k && !seen.has(k)) {
+      seen.add(k);
+      extra.push(token);
+    }
+  }
+  return `${paragraphs} ${extra.join(" ")}`;
 }
 
 function cleanText(raw: string): string {
@@ -306,30 +336,53 @@ function makeKeywords(words: string[]): string[] {
 
 // File names include a short content hash, so a replaced poster gets new URLs and the
 // old ones can be cached forever.
-async function writeVariants(id: string, s: ScannedFile): Promise<PosterRecord["src"]> {
+async function writeVariants(id: string, s: ScannedFile): Promise<Pick<PosterRecord, "src" | "avif">> {
   // Standard widths below the original, plus the original itself when it's under the largest
   // standard width, so the sharpest version is never thrown away (and nothing is upscaled).
   const widths = WIDTHS.filter((w) => w < s.width);
   if (s.width <= WIDTHS[WIDTHS.length - 1]!) widths.push(s.width);
   const short = s.hash.slice(0, 8);
-  return Promise.all(
-    widths.map(async (width) => {
-      const name = `${id}-${short}-${width}.webp`;
-      const out = join(IMAGES_DIR, name);
-      if (!(await exists(out))) {
-        await sharp(join(POSTERS_DIR, s.file)).rotate().resize({ width }).webp({ quality: WEBP_QUALITY }).toFile(out);
-        counts.imagesWritten++;
-      }
-      return { width, url: `${IMAGES_URL}/${name}` };
-    }),
-  );
+  const write = (format: "webp" | "avif") =>
+    Promise.all(
+      widths.map(async (width) => {
+        const name = `${id}-${short}-${width}.${format}`;
+        const out = join(IMAGES_DIR, name);
+        if (!(await exists(out))) {
+          const resized = sharp(join(POSTERS_DIR, s.file)).rotate().resize({ width });
+          await (format === "webp"
+            ? resized.webp({ quality: WEBP_QUALITY })
+            : resized.avif({ quality: AVIF_QUALITY, effort: AVIF_EFFORT })
+          ).toFile(out);
+          counts.imagesWritten++;
+        }
+        return { width, url: `${IMAGES_URL}/${name}` };
+      }),
+    );
+  const [src, avif] = await Promise.all([write("webp"), write("avif")]);
+  return { src, avif };
 }
 
 async function removeStaleImages(records: PosterRecord[]): Promise<void> {
-  const keep = new Set(records.flatMap((r) => r.src.map((v) => basename(v.url))));
+  const keep = new Set(records.flatMap((r) => [...r.src, ...r.avif].map((v) => basename(v.url))));
   for (const name of await readdir(IMAGES_DIR)) {
     if (!keep.has(name)) await rm(join(IMAGES_DIR, name));
   }
+}
+
+// ---------- Share image ----------
+
+// Link previews (Open Graph) show the newest poster, cropped to 1200x630 from the top.
+async function writeShareImage(manifest: Manifest, records: PosterRecord[]): Promise<void> {
+  const out = join(ROOT, "public", OG_IMAGE_PATH);
+  const newest = records[0];
+  if (!newest) return;
+  const entry = manifest.posters.find((e) => e.id === newest.id)!;
+  // Remember which poster the image was made from (outside public/, so it's never deployed).
+  const stamp = join(ROOT, ".cache/og-source.txt");
+  const source = `${entry.id} ${entry.hash}`;
+  if ((await exists(out)) && (await readFile(stamp, "utf8").catch(() => "")) === source) return;
+  await sharp(join(POSTERS_DIR, entry.file)).rotate().resize(1200, 630, { fit: "cover", position: "top" }).jpeg({ quality: 82 }).toFile(out);
+  await writeFile(stamp, source);
 }
 
 // ---------- Helpers ----------

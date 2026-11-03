@@ -1,0 +1,9 @@
+{
+  "about": "Words read by eye off each poster image (not copied from OCR output). npm run check:search confirms search finds each poster by them. Add 5-10 distinct words for every new poster.",
+  "posters": {
+    "geologic-time-scale": ["Holocene", "Pleistocene", "Cretaceous", "Jurassic", "Carboniferous", "Ordovician", "Hadean", "Mississippian", "dinosaurs", "Precambrian"],
+    "gnostic-cosmology": ["Monad", "Pleroma", "Sophia", "Demiurge", "Yaldabaoth", "Archons", "emanations", "gnosis", "Revealer", "captivity"],
+    "resurrection-overview-jehovahs-witness-vs-seventh-day-adventist": ["Millennium", "paradise", "Satan", "glorified", "immortal", "judgment", "unrighteous", "Christianity", "permanently", "instruction"],
+    "jacob-esau": ["Edomites", "birthright", "Isaac", "impulsive", "Rebekah", "Obadiah", "Idumea", "Canaan", "Mediterranean", "grabber"]
+  }
+}

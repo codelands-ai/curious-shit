@@ -4,6 +4,13 @@
 import { POSTER_SIZES, type FeedPoster } from "./poster.ts";
 import { REACTIONS } from "./reactions.ts";
 
+export function srcset(variants: FeedPoster["src"]): string {
+  return [...variants]
+    .sort((a, b) => a.width - b.width)
+    .map((v) => `${v.url} ${v.width}w`)
+    .join(", ");
+}
+
 export function cardHtml(poster: FeedPoster, first: boolean): string {
   const variants = [...poster.src].sort((a, b) => a.width - b.width);
   const img: Record<string, string | number> = {
@@ -12,7 +19,7 @@ export function cardHtml(poster: FeedPoster, first: boolean): string {
     width: poster.width,
     height: poster.height,
     sizes: POSTER_SIZES,
-    srcset: variants.map((v) => `${v.url} ${v.width}w`).join(", "),
+    srcset: srcset(variants),
     src: variants[variants.length - 1]!.url,
     // The first poster is the LCP element: load it now, at high priority, and paint it as soon as it decodes.
     // Lazy images near the viewport still load early, so low priority keeps them out of its way.
@@ -25,7 +32,10 @@ export function cardHtml(poster: FeedPoster, first: boolean): string {
   return (
     `<figure class="${classes}" data-poster-id="${escape(poster.id)}">` +
     `<figcaption class="exhibit__header"><span class="exhibit__title">${escape(poster.title)}</span>${reactionBarHtml()}</figcaption>` +
-    `<div class="exhibit__frame"><img ${attrs}></div>` +
+    // AVIF where supported (about 40% smaller), WebP everywhere else.
+    `<div class="exhibit__frame"><picture>` +
+    (poster.avif?.length ? `<source type="image/avif" srcset="${escape(srcset(poster.avif))}" sizes="${escape(POSTER_SIZES)}">` : "") +
+    `<img ${attrs}></picture></div>` +
     `</figure>`
   );
 }

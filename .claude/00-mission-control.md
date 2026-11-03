@@ -21,7 +21,8 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-01 | Phase 3: MiniSearch search bar with results, clearing, `?q=` links, error line, speed and accuracy checks | PR #6 |
 | 2026-11-01 | Phase 4: Cloudflare config, caching headers, `npm run deploy` / `deploy:preview`, first production deploy, mobile LCP fixes | PR #7 |
 | 2026-11-01 | Phase 5: Firebase sign-in (Google popup, email link), auth control and dialog, privacy page | PR #9 |
-| 2026-11-02 | Phase 6: reactions Worker + D1, reaction bar in a placard panel above each poster, Worker tests, delete-user script | `phase-6-reactions` |
+| 2026-11-02 | Phase 6: reactions Worker + D1, reaction bar in a placard panel above each poster, Worker tests, delete-user script | PR #10 |
+| 2026-11-03 | Phase 7: success criteria met with evidence; AVIF, self-hosted fonts, pre-built search index, sparse OCR, accessibility fixes, page basics, CSP, README | `phase-7-launch-readiness` |
 | 2026-11-01 | First poster published with `npm run deploy`: `jacob-esau.webp`, live and searchable in 12s | commit `98a8732` |
 
 ## Decisions
@@ -61,6 +62,12 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-02 | Tapping the signed-out tooltip opens the sign-in dialog | Owner approved (superseded below) |
 | 2026-11-02 | After trying the preview: "Sign in to react" becomes "Sign in to vote" (button and dialog); signed-out taps open sign-in directly, no tooltip; counts always show, including 0; title and reaction bar move above the poster in one row (stacked on phones); title 31px (25px on phones) in bright text; emoji 28px in 48px pills | Owner feedback: "react" reads as the framework, and titles and emoji were too small and easy to miss |
 | 2026-11-02 | Title and emoji sit inside a raised `--plinth` placard panel attached to the top of each poster, with pills on `--wall`; the picture light moves behind the whole exhibit and its edges are masked | Owner feedback: the pills crossed the glow's hard top edge; the panel should act as a divider between posters |
+| 2026-11-03 | The LCP criterion is measured with Lighthouse devtools (applied) throttling, mobile | Stricter than the simulated default; passing it implies passing the other |
+| 2026-11-03 | Self-host the fonts (supersedes "Fonts stay on Google Fonts until phase 7") | Removes a second origin from the critical path, and Google no longer sees visitor IPs |
+| 2026-11-03 | Keep the owner's three test votes as the first real votes | Owner's choice |
+| 2026-11-03 | The search input shows only its brass border on focus; every other control keeps the standard focus outline | Resolves the phase 3 double ring |
+| 2026-11-03 | Phase 7 includes the launch polish (accessibility, page basics, CSP, README) | Owner's choice |
+| 2026-11-03 | Hard rule reworded: if the Worker is down, bars are hidden; if Firebase is down, counts still show and sign-in reports an error (CLAUDE.md, PRD, content model) | Owner's choice: counts come from our own Worker, so hiding them when only sign-in is down would remove working information |
 | 2026-11-01 | `.claude/PRD.md` is the only PRD; the claude.ai shared copy is dropped and no longer maintained | The repo file is versioned and read by every session; one copy can't drift |
 
 ## Plan
@@ -78,7 +85,7 @@ Each phase ends with something that can be seen or tested. Phases and steps are 
 | 4 | First deploy | done | Gallery and search live on Cloudflare (Workers static assets) |
 | 5 | Sign-in | done | Firebase Auth with Google and email magic link |
 | 6 | Reactions | done | Worker + D1 endpoint, reaction bar wired up, rate limiting |
-| 7 | Launch readiness | proposed | Graceful degradation, success criteria checked (privacy page moved to phase 5) |
+| 7 | Launch readiness | done | Graceful degradation, success criteria checked (privacy page moved to phase 5) |
 
 Detailed steps for each phase get added below as they're confirmed.
 
@@ -240,6 +247,68 @@ curious-shit/
 - Lighthouse mobile (devtools throttling): CLS 0; LCP 2.75–2.84s against 2.66s in phase 5 (+6.5 KB JS, within noise).
 - Found and fixed: phone pages scrolled 32px sideways because of the picture light (since phase 2).
 
+### Phase 7: Launch readiness (done 2026-11-03)
+
+| # | Step | Detail | Status |
+| --- | --- | --- | --- |
+| 7.1 | Publish in 5 minutes | Re-time a publish with OCR not cached. | done |
+| 7.2 | Search accuracy | `npm run check:search` over `data/search-check.json` (words read off each poster by eye); Jacob and Esau added. | done |
+| 7.3 | Search at 1,000 posters | Index build time on a 4× slowed CPU; pre-build at ingest if too slow. | done |
+| 7.4 | LCP under 2.5s | Devtools throttling. Try AVIF with a WebP fallback, phone-size quality and self-hosted fonts; keep what works. | done |
+| 7.5 | One emoji each | Record the Worker tests as evidence. | done |
+| 7.6 | $0 at scale | Free-plan limits from current docs against estimated use at 1,000 posters and 10,000 visitors a month. | done |
+| 7.7 | Graceful degradation | On the live site, block Firebase, then the API: browsing and search work, bars hidden. | done |
+| 7.8 | No upload path | Audit every write path. | done |
+| 7.9 | Accessibility | Keyboard-only run, axe scan, contrast check. | done |
+| 7.10 | Page basics | Favicon, meta description, Open Graph, 404 page. | done |
+| 7.11 | Security headers | Content-Security-Policy, tested against every sign-in flow. | done |
+| 7.12 | README | Owner's guide to publishing, previews, deletion and local dev. | done |
+
+**Done when:** all six success criteria have recorded evidence, the hard rules pass on the live site, and every open caveat in the tracker is either resolved or explained.
+
+**Success criteria, 2026-11-03:**
+
+| PRD criterion | Result | Evidence |
+| --- | --- | --- |
+| Adding a poster takes one command, and it's live and searchable within 5 minutes | **Met: 22s** | `npm run deploy:preview` with the OCR cache cleared and one poster's images deleted: OCR of 4 posters (both passes), WebP and AVIF, type-checks, 25 tests, build and upload. The first real publish (phase 4) took 12s. Search ships in the same upload. |
+| Searching any distinct word visible on a poster returns it for at least 90% of posters | **Met: 4/4 posters, 40/40 words** | `npm run check:search` over `data/search-check.json` (10 words per poster read by eye, mostly small print and map labels). Needed sparse-text OCR for "Mediterranean", a map label. |
+| Search results in under 200ms with 1,000 posters | **Met: 8–13ms** | `npm run bench:search`, 1,000 synthetic posters of 5,000 characters. With a 4× slowed CPU in Chromium: 11ms per search; the one-time index load is 326ms (pre-built by ingest). |
+| First poster visible in under 2.5s (LCP) on a mid-range phone over 4G | **Met: 1.82s median** | Lighthouse mobile, devtools (applied) throttling, five runs: 1.80–1.85s, score 99, CLS 0. Was 2.73s; fixed with AVIF (45–50% smaller than WebP) and self-hosted fonts. |
+| One of each emoji per user per poster, verified by tests against the Worker | **Met** | `npm test`, 25/25, including 10 concurrent identical adds and the database's unique constraint. `npm run deploy` refuses to upload if they fail. |
+| $0 a month through 1,000 posters and 10,000 monthly visitors | **Met, with one soft limit** | See the table below. The only tight limit is 5 email-link sign-ins a day. |
+
+**Free-plan limits against estimated use at 1,000 posters and 10,000 visits a month** (about 330 visits a day; peak days assumed 10× that). Limits quoted from developers.cloudflare.com on 2026-11-03 (Workers limits page updated Oct 29, 2026; static assets billing Nov 3; D1 limits and pricing Oct 30) and firebase.google.com/docs/auth/limits (updated Oct 20, 2026).
+
+| Limit | Free allowance | Estimated use | Headroom |
+| --- | --- | --- | --- |
+| Static asset requests (pages, images, fonts, JSON) | "free and unlimited" | all page traffic | none needed |
+| Worker requests (`/api/*` only) | 100,000/day; over it, `/api/*` gets 429 and bars hide | about 5 per visit: 1,700/day, 17,000 on a peak day | 6× at peak |
+| Worker CPU per request | 10 ms | token check and one D1 batch, a few ms | ok |
+| D1 queries per invocation | 50 | at most 3 | ok |
+| D1 rows read | 5 million/day | up to about 100 per count lookup: 170,000/day, 1.7M peak | 3× at peak |
+| D1 rows written | 100,000/day | about 4 per vote (row, count, index): 100 votes a day is 400 rows | 250× |
+| D1 storage | 500 MB per database, 5 GB total | about 100 bytes per reaction: 100,000 reactions is about 10 MB | 50× |
+| Files per Worker version | 20,000 | 1,000 posters × 2 formats × 2–3 widths ≈ 6,000, plus about 20 | 3× |
+| Largest file | 25 MiB | `index.json` and `search-index.json` about 5 MB each | 5× |
+| Firebase Auth daily active users (Spark, if the tier applies) | 3,000 (Tier 1) | signed-in visitors per day, well under 300 | 10× |
+| Firebase email-link emails | **5/day** | new email sign-ins only | **tight**: past 5, the dialog suggests Google |
+| Git repo (originals) | R2 move planned past about 1 GB | about 500 KB per poster: about 500 MB at 1,000 | ok |
+
+**Hard rules:**
+- Graceful degradation, on the preview, with the same Cloudflare and Firebase setup as live.
+  - Worker API down: feed loads and keeps loading as you scroll (9 → 33 cards), search works, all bars hidden.
+  - Both down: the same.
+  - Firebase down: feed and search work, counts still show, and sign-in shows a friendly error, which matches the reworded rule.
+- No public upload path: POST, PUT, DELETE and PATCH on pages and files return 405; unknown API paths 404. The only writes are `PUT`/`DELETE /api/reactions/:poster/:emoji` with no body, behind token verification.
+
+**Launch polish:**
+- Accessibility: axe (WCAG 2.2 AA plus best practice) reports 0 issues on the gallery (desktop and phone), the sign-in dialog, no-results, privacy and 404.
+  - Fixed: no h1 on phones; `--text-faint` on `--plinth` (4.3:1); `--oxblood` errors (3.5:1, now `#C76852` at 4.6:1).
+  - Keyboard: tab order is search, sign-in, then the pills; the dialog keeps focus and returns it to "Sign in to vote" on close.
+- Page basics: SVG favicon and touch icon, meta description, Open Graph and Twitter tags with a 1200×630 share image of the newest poster (made by ingest), canonical URLs, and a 404 page ("Nothing hangs here") with status 404.
+- CSP: `default-src 'self'` plus only Firebase sign-in's origins. No violations across the feed, voting, search, privacy, 404 and the Google popup and frame. The owner confirmed Google sign-in works under the CSP on the phase 7 preview (2026-11-03), which runs the same headers as production.
+- README: owner's guide to publishing, corrections, previews, deletion and local dev.
+
 ## Environment
 
 Checked 2026-11-01 on the owner's machine (WSL2, Linux):
@@ -257,28 +326,35 @@ Checked 2026-11-01 on the owner's machine (WSL2, Linux):
 
 ## Caveats and open issues
 
-- The `initial-checkin` and `create-mission-control` branches are merged but still exist on GitHub (`initial-checkin` also locally).
-- Renaming a poster and editing its contents in the same run makes it look new: it gets a new ID and the old entry is retired, so its reactions are orphaned. Rename and edit in separate runs.
-- A correction file must be renamed along with its poster (`<name>.ocr.txt` follows the image's filename).
-- The sample posters are only 1536–1672px wide, so on high-density desktop screens they show at their native width, slightly soft. Larger originals (2400px+) fix that.
-- The feed never removes cards, so a very long scroll keeps growing the page. Fine for now; revisit if memory becomes a problem on phones.
-- Scrolling very fast (thousands of pixels at once) can catch the loading dot on screen as a batch is added, which counts as layout shift. Normal scrolling causes none.
-- Below 768px the spec hides the wordmark to make room for the search input; that rule arrives with the input in phase 3.
-- At 1,000 posters, `index.json` is about 5 MB (2.6 MB gzipped for random text; real text compresses better) and building the search index takes about 0.8s on the owner's machine, likely 2–4s on a phone. This happens once, on the first search. If it's too slow, ingest can pre-build the MiniSearch index (`toJSON`/`loadJSON`) or the build can move to a Web Worker.
-- The focused search box shows both the brass border (design standard, Search) and the standard brass focus outline (design standard, Focus), which reads as a double ring. Both rules were followed as written; drop one if it looks heavy.
-- Very common words (e.g. "the") match every poster. That's expected; results are ranked, not filtered further.
-- The live address includes the Cloudflare account's subdomain (`smokeraven667.workers.dev`). A custom domain would replace it.
-- Preview URLs are public to anyone who has the link.
-- `npm run deploy:preview` runs ingest, so new posters in `posters/` get IDs in the local manifest. That change stays uncommitted; the production deploy commits it.
-- A shared `?q=` link may briefly show the newest poster (written into the HTML) before the results replace it.
-- **LCP under real throttling misses the target.** Lighthouse's default simulated throttling gives about 1.6s, but devtools (applied) throttling gives a median of about 2.7s for both phase 4 and phase 5. The 141 KB first poster takes about 2s to download on throttled 4G. Phase 7 should decide which measurement counts and, if needed, add a smaller phone-sized image (lower WebP quality or a ~640px variant).
-- Firebase Spark allows 5 email-link sign-in emails a day (see Decisions). Testing email sign-in uses that quota.
-- Every preview branch needs its own Firebase authorized domain (`<branch>-curious-shit.smokeraven667.workers.dev`) for sign-in to work there.
-- On phones, "Sign in to vote" shortens the search placeholder to "Search every word…".
-- Preview deploys use the production D1 database, so votes cast on a preview are real. Schema migrations are applied only by production deploys.
-- Rate limits are approximate and counted per Cloudflare location (Cloudflare's docs); fine for flood protection, not exact quotas.
-- Reads are rate-limited by IP address, which Cloudflare's docs advise against for stable keys; there's no better key for signed-out visitors.
-- Fonts load from Google Fonts at runtime, so the page needs network access to show the right typefaces.
-- Cloudflare and Firebase accounts and projects have to be created by the owner; Claude can't sign up for them. Deferred to phase 4 (Cloudflare) and phase 5 (Firebase), when they're first needed.
-- Generated images aren't committed, so a fresh clone must run `npm run ingest` before `npm run dev` shows posters.
-- Titles built from filenames lose punctuation: `resurrection-overview-jehovahs-witness-vs-seventh-day-adventist` becomes "Resurrection Overview Jehovahs Witness Vs Seventh Day Adventist". Proper titles need the sidecar metadata file (a Should-Have) or careful filenames.
+Reviewed 2026-11-03 (phase 7). Every item is either resolved or a known limitation with its reason.
+
+### Resolved
+
+- ~~LCP under real throttling missed the target~~: AVIF posters and self-hosted fonts give 1.82s median with devtools throttling (phase 7).
+- ~~The search index build takes 2–4s on a phone~~: ingest pre-builds it; loading takes 326ms on a 4× slowed CPU (phase 7).
+- ~~Double focus ring on the search box~~: the search box keeps only its brass border (phase 7 decision).
+- ~~Fonts load from Google Fonts~~: self-hosted (phase 7).
+- ~~Below 768px the wordmark hides~~: done in phase 3; in phase 7 it became visually hidden, so it's still the page's h1 for screen readers.
+- ~~Cloudflare and Firebase accounts needed creating~~: done in phases 4 and 5.
+
+### Known limitations
+
+- **Rename and edit in separate deploys.** Doing both at once makes a poster look new: new ID, reactions orphaned. In the README.
+- **Correction files follow their poster's filename**, so rename them together. In the README.
+- **Sample posters are 1536–1672px wide**, so they're a little soft on high-density desktop screens. Originals of 2400px or more fix it.
+- **The feed never removes cards**, so a very long scroll keeps growing the page. No problem seen at 100+ cards; revisit if phones struggle.
+- **Very fast scrolling** (thousands of pixels at once) can catch the loading dot on screen as a batch is added, which counts as layout shift. Normal scrolling causes none.
+- **Very common words** like "the" match every poster. Results are ranked, which is expected.
+- **The address includes the account subdomain** (`smokeraven667.workers.dev`). A custom domain would replace it: change `SITE_URL` in `shared/site.ts` and add the domain to Firebase's authorized domains and the CSP `frame-src` if the auth domain changes.
+- **Preview URLs are public** to anyone with the link.
+- **Previews use the production D1**, so votes cast on a preview are real. Schema migrations run only on production deploys. In the README.
+- **Each preview branch needs its own Firebase authorized domain** for sign-in. In the README.
+- **`npm run deploy:preview` runs ingest**, so new posters get IDs in the local manifest. That change stays uncommitted; the production deploy commits it.
+- **A shared `?q=` link may briefly show the newest poster**, written into the HTML, before the results replace it. A fix needs an inline script, which the CSP forbids.
+- **Firebase Spark allows 5 email-link sign-in emails a day.** Past that, the dialog suggests Google. Testing email sign-in uses the quota.
+- **On phones, "Sign in to vote" shortens the search placeholder** to "Search every word…".
+- **Rate limits are approximate and per Cloudflare location**, and reads are keyed by IP, which Cloudflare advises against for stable keys; there's no better key for signed-out visitors. Fine for flood protection.
+- **Titles built from filenames lose punctuation** ("Jehovahs Witness Vs …"). Proper titles need the sidecar metadata file (a Should-Have) or careful filenames.
+- **A fresh clone must run `npm run ingest`** before `npm run dev` shows posters. Generated files aren't committed. In the README.
+- **The `initial-checkin` and `create-mission-control` branches** still exist on GitHub (`initial-checkin` also locally). Harmless; delete whenever.
+- **Tabbing past the last control in the sign-in dialog** reaches the browser's own toolbar before cycling back. That's native `<dialog>` behaviour; page content behind it stays unreachable.

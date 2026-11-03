@@ -3,7 +3,7 @@
 
 import { gzipSync } from "node:zlib";
 import type { IndexPoster } from "../shared/poster.ts";
-import { buildSearch, runSearch } from "../shared/search.ts";
+import { buildSearch, loadSearch, runSearch } from "../shared/search.ts";
 
 const POSTERS = 1000;
 const CHARS = 5000;
@@ -29,6 +29,7 @@ const posters: IndexPoster[] = Array.from({ length: POSTERS }, (_, i) => {
     keywords: titleWords,
     ocr_text: text.slice(0, CHARS).trim(),
     src: [{ width: 800, url: `/generated/posters/poster-${i}-800.webp` }],
+    avif: [{ width: 800, url: `/generated/posters/poster-${i}-800.avif` }],
     width: 1600,
     height: 1000,
     added_at: new Date(2026, 0, 1 + i).toISOString(),
@@ -37,8 +38,13 @@ const posters: IndexPoster[] = Array.from({ length: POSTERS }, (_, i) => {
 
 const json = JSON.stringify({ posters });
 const t0 = performance.now();
-const search = buildSearch(posters);
+const built = buildSearch(posters);
 const buildMs = performance.now() - t0;
+// What the browser does: load the index ingest pre-built.
+const serialized = JSON.stringify(built);
+const t1 = performance.now();
+const search = loadSearch(serialized);
+const loadMs = performance.now() - t1;
 
 const common = vocab[0]!;
 const rare = vocab[vocab.length - 1]!;
@@ -56,7 +62,8 @@ const queries: Record<string, string> = {
 };
 
 console.log(`${POSTERS} posters, index.json ${(json.length / 1e6).toFixed(1)} MB (${(gzipSync(json).length / 1e6).toFixed(1)} MB gzipped)`);
-console.log(`build index: ${buildMs.toFixed(0)}ms (once, after index.json loads)\n`);
+console.log(`build index: ${buildMs.toFixed(0)}ms (done once by ingest)`);
+console.log(`load pre-built index: ${loadMs.toFixed(0)}ms (${(serialized.length / 1e6).toFixed(1)} MB; what the browser does on first search)\n`);
 
 let worst = 0;
 for (const [label, q] of Object.entries(queries)) {

@@ -14,12 +14,12 @@ Single-curator gallery. Only the owner publishes posters, through the repo and b
 | Auth           | Firebase Authentication                         | Google and email magic link. The Worker verifies ID tokens against Google's public keys. Store nothing beyond the Firebase UID.                                                                              |
 | OCR and ingest | Build-time script (Tesseract or similar)        | Runs in CI or locally, never in the browser or Worker. Rejects images with aspect ratio below 1.2. Assigns permanent IDs and publish dates in a manifest. A per-poster correction file overrides OCR output. |
 | Search         | Client-side (MiniSearch or Pagefind)            | Searches a static JSON index of filename keywords and OCR text. No search service.                                                                                                                           |
-| Images         | WebP at 2–3 widths, lazy-loaded in batches of 8 | Originals move from git to Cloudflare R2 past about 1 GB.                                                                                                                                                    |
+| Images         | AVIF + WebP fallback at 2–3 widths, lazy-loaded in batches of 8 | Originals move from git to Cloudflare R2 past about 1 GB.                                                                                                                                                    |
 
 Hard rules:
 
 - Must run on Cloudflare and Firebase free tiers.
-- If the Worker or Firebase is down, scrolling and search still work and reaction bars are hidden.
+- Scrolling and search never depend on the Worker or Firebase. If the Worker is down, reaction bars are hidden. If Firebase is down, counts still show and sign-in reports an error.
 - Poster IDs never change after first ingest, even if the file is renamed. Reactions depend on them.
 - No public upload path of any kind.
 

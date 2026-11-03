@@ -1,6 +1,9 @@
 # Response headers for Workers static assets. https://developers.cloudflare.com/workers/static-assets/headers/
 
 /*
+  # Only this site, plus what Firebase sign-in needs: apis.google.com (popup script), the project's auth
+  # domain (sign-in frame) and the Identity Toolkit / Secure Token APIs. Update frame-src if authDomain changes.
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://apis.google.com; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com; frame-src https://curious-shit.firebaseapp.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
@@ -18,4 +21,7 @@
   Cache-Control: public, max-age=0, must-revalidate
 
 /generated/index.json
+  Cache-Control: public, max-age=0, must-revalidate
+
+/generated/search-index.json
   Cache-Control: public, max-age=0, must-revalidate

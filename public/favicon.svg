@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- A landscape print in a brass frame on the gallery wall (design standard colours: wall, brass, plinth). -->
+  <rect width="64" height="64" rx="6" fill="#121110"/>
+  <rect x="8" y="16" width="48" height="32" fill="#1C1A17" stroke="#C9A15B" stroke-width="4"/>
+  <path d="M14 42l10-11 7 7 6-5 13 9z" fill="#8A6F3F"/>
+</svg>

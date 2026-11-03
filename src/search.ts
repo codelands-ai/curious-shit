@@ -1,6 +1,6 @@
 // Search bar: lazy-loads the index, filters the gallery, and keeps the query in ?q=.
 
-import { INDEX_URL, type FeedPoster, type IndexPoster } from "../shared/poster.ts";
+import { SEARCH_INDEX_URL, type FeedPoster } from "../shared/poster.ts";
 import type { PosterSearch } from "../shared/search.ts";
 import { LINES, type Gallery } from "./gallery.ts";
 
@@ -19,27 +19,28 @@ export function startSearch(gallery: Gallery, feedReady: Promise<FeedPoster[] | 
   type Loaded = {
     search: PosterSearch;
     run: (search: PosterSearch, query: string) => string[];
-    byId: Map<string, IndexPoster>;
+    byId: Map<string, FeedPoster>;
   };
   let index: Promise<Loaded | null> | null = null;
   let timer: number | undefined;
   let shown = ""; // the query currently on screen; "" means the full feed
   let token = 0; // guards against an older, slower search finishing last
 
-  // The index and the search library load together, on first use, so neither delays the first poster.
+  // The pre-built index and the search library load together, on first use, so neither delays the first
+  // poster. Results are shown from feed.json, which the page already has.
   const loadIndex = () =>
     (index ??= Promise.all([
-      fetch(INDEX_URL).then((r) => {
-        if (!r.ok) throw new Error(`${INDEX_URL} returned ${r.status}`);
-        return r.json() as Promise<{ posters: IndexPoster[] }>;
+      fetch(SEARCH_INDEX_URL).then((r) => {
+        if (!r.ok) throw new Error(`${SEARCH_INDEX_URL} returned ${r.status}`);
+        return r.text();
       }),
       import("../shared/search.ts"),
+      feedReady,
     ])
-      .then(([{ posters }, lib]): Loaded => ({
-        search: lib.buildSearch(posters),
-        run: lib.runSearch,
-        byId: new Map(posters.map((p) => [p.id, p])),
-      }))
+      .then(([json, lib, posters]): Loaded => {
+        if (!posters) throw new Error("feed.json is unavailable");
+        return { search: lib.loadSearch(json), run: lib.runSearch, byId: new Map(posters.map((p) => [p.id, p])) };
+      })
       .catch((err: unknown) => {
         console.error("Couldn't load the search index", err);
         index = null; // try again on the next search
@@ -75,7 +76,7 @@ export function startSearch(gallery: Gallery, feedReady: Promise<FeedPoster[] | 
     }
 
     const t0 = performance.now();
-    const posters = loaded.run(loaded.search, query).map((id) => loaded.byId.get(id)!);
+    const posters = loaded.run(loaded.search, query).flatMap((id) => loaded.byId.get(id) ?? []);
     if (import.meta.env.DEV) console.debug(`search "${query}": ${posters.length} in ${(performance.now() - t0).toFixed(1)}ms`);
 
     shown = query;

@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { defineConfig, type Plugin } from "vite";
-import { cardHtml } from "./shared/card.ts";
+import { cardHtml, srcset } from "./shared/card.ts";
 import { FEED_URL, POSTER_SIZES, type FeedPoster } from "./shared/poster.ts";
+import { OG_IMAGE_PATH, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "./shared/site.ts";
 
 const FEED_FILE = new URL("./public/generated/feed.json", import.meta.url);
 
@@ -19,14 +20,17 @@ function preloadFirstPoster(): Plugin {
         { tag: "link", attrs: { rel: "preload", href: FEED_URL, as: "fetch", crossorigin: "anonymous" }, injectTo: "head" },
       ];
       if (first) {
-        const variants = [...first.src].sort((a, b) => a.width - b.width);
+        // Preload the format the <picture> will pick: AVIF if there is one (browsers without AVIF skip a
+        // typed preload), otherwise WebP.
+        const variants = [...(first.avif?.length ? first.avif : first.src)].sort((a, b) => a.width - b.width);
         tags.push({
           tag: "link",
           attrs: {
             rel: "preload",
             as: "image",
+            ...(first.avif?.length ? { type: "image/avif" } : {}),
             href: variants[variants.length - 1]!.url,
-            imagesrcset: variants.map((v) => `${v.url} ${v.width}w`).join(", "),
+            imagesrcset: srcset(variants),
             imagesizes: POSTER_SIZES,
             fetchpriority: "high",
           },
@@ -41,11 +45,41 @@ function preloadFirstPoster(): Plugin {
   };
 }
 
+// Description, icons and Open Graph tags for every page, from shared/site.ts.
+function pageMeta(): Plugin {
+  return {
+    name: "page-meta",
+    transformIndexHtml(html, ctx) {
+      const path = ctx.path === "/index.html" ? "/" : ctx.path.replace(/\.html$/, "");
+      const title = /<title>([^<]*)<\/title>/.exec(html)?.[1] ?? SITE_NAME;
+      const meta = (attrs: Record<string, string>) => ({ tag: "meta", attrs, injectTo: "head" as const });
+      const link = (attrs: Record<string, string>) => ({ tag: "link", attrs, injectTo: "head" as const });
+      const notFound = ctx.path.endsWith("/404.html");
+      return [
+        meta({ name: "description", content: SITE_DESCRIPTION }),
+        meta({ name: "theme-color", content: "#121110" }),
+        link({ rel: "icon", href: "/favicon.svg", type: "image/svg+xml" }),
+        link({ rel: "apple-touch-icon", href: "/apple-touch-icon.png" }),
+        ...(notFound ? [] : [link({ rel: "canonical", href: `${SITE_URL}${path}` })]),
+        meta({ property: "og:site_name", content: SITE_NAME }),
+        meta({ property: "og:type", content: "website" }),
+        meta({ property: "og:title", content: title }),
+        meta({ property: "og:description", content: SITE_DESCRIPTION }),
+        meta({ property: "og:url", content: `${SITE_URL}${path}` }),
+        meta({ property: "og:image", content: `${SITE_URL}${OG_IMAGE_PATH}` }),
+        meta({ property: "og:image:width", content: "1200" }),
+        meta({ property: "og:image:height", content: "630" }),
+        meta({ name: "twitter:card", content: "summary_large_image" }),
+      ];
+    },
+  };
+}
+
 // The frontend lives in src/; ingest output in public/generated/ is served as static files.
 export default defineConfig({
   root: "src",
   publicDir: "../public",
-  plugins: [preloadFirstPoster()],
+  plugins: [preloadFirstPoster(), pageMeta()],
   // `npm run dev:api` serves the reactions Worker and a local D1 on 8787.
   server: { proxy: { "/api": "http://127.0.0.1:8787" } },
   build: {
@@ -55,6 +89,7 @@ export default defineConfig({
       input: {
         main: new URL("./src/index.html", import.meta.url).pathname,
         privacy: new URL("./src/privacy.html", import.meta.url).pathname,
+        notFound: new URL("./src/404.html", import.meta.url).pathname,
       },
     },
   },

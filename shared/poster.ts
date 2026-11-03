@@ -10,7 +10,10 @@ export interface PosterVariant {
 export interface FeedPoster {
   id: string;
   title: string;
+  /** WebP at each width: the fallback every browser can show. */
   src: PosterVariant[];
+  /** AVIF at the same widths: about 40% smaller, used where the browser supports it. */
+  avif: PosterVariant[];
   width: number;
   height: number;
   added_at: string;
@@ -28,3 +31,5 @@ export const FEED_URL = "/generated/feed.json";
 export const POSTER_SIZES =
   "(min-width: 1280px) min(calc(100vw - 128px), 1600px), (min-width: 768px) calc(100vw - 64px), calc(100vw - 32px)";
 export const INDEX_URL = "/generated/index.json";
+/** The MiniSearch index, pre-built by ingest. The browser loads this instead of index.json. */
+export const SEARCH_INDEX_URL = "/generated/search-index.json";
