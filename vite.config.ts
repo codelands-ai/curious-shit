@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { defineConfig, type Plugin } from "vite";
-import { cardHtml } from "./shared/card.ts";
+import { cardHtml, srcset } from "./shared/card.ts";
 import { FEED_URL, POSTER_SIZES, type FeedPoster } from "./shared/poster.ts";
 
 const FEED_FILE = new URL("./public/generated/feed.json", import.meta.url);
@@ -19,14 +19,17 @@ function preloadFirstPoster(): Plugin {
         { tag: "link", attrs: { rel: "preload", href: FEED_URL, as: "fetch", crossorigin: "anonymous" }, injectTo: "head" },
       ];
       if (first) {
-        const variants = [...first.src].sort((a, b) => a.width - b.width);
+        // Preload the format the <picture> will pick: AVIF if there is one (browsers without AVIF skip a
+        // typed preload), otherwise WebP.
+        const variants = [...(first.avif?.length ? first.avif : first.src)].sort((a, b) => a.width - b.width);
         tags.push({
           tag: "link",
           attrs: {
             rel: "preload",
             as: "image",
+            ...(first.avif?.length ? { type: "image/avif" } : {}),
             href: variants[variants.length - 1]!.url,
-            imagesrcset: variants.map((v) => `${v.url} ${v.width}w`).join(", "),
+            imagesrcset: srcset(variants),
             imagesizes: POSTER_SIZES,
             fetchpriority: "high",
           },

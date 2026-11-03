@@ -10,7 +10,10 @@ export interface PosterVariant {
 export interface FeedPoster {
   id: string;
   title: string;
+  /** WebP at each width: the fallback every browser can show. */
   src: PosterVariant[];
+  /** AVIF at the same widths: about 40% smaller, used where the browser supports it. */
+  avif: PosterVariant[];
   width: number;
   height: number;
   added_at: string;

@@ -114,6 +114,12 @@
   border-color: var(--brass);
 }
 
+/* The brass border is this field's focus indicator, so it skips the global outline (owner decision,
+   phase 7). Every other control keeps the outline. */
+.search__input:focus-visible {
+  outline: none;
+}
+
 .search__input::-webkit-search-cancel-button,
 .search__input::-webkit-search-decoration {
   appearance: none;
