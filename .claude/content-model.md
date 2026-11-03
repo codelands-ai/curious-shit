@@ -16,7 +16,7 @@ The page has six sections, top to bottom, fed by two data records. Only Must-Hav
 
 | Field | Description | Constraints |
 | --- | --- | --- |
-| `image` | The poster | Responsive WebP at 2–3 widths via `srcset`. Width and height set up front so the page doesn't jump. Landscape only (aspect ratio at least 1.2); anything else is rejected at build. Lazy-loaded except the first card, in batches of 8. |
+| `image` | The poster | Responsive AVIF (WebP fallback) at 2–3 widths via `<picture>` and `srcset`. Width and height set up front so the page doesn't jump. Landscape only (aspect ratio at least 1.2); anything else is rejected at build. Lazy-loaded except the first card, in batches of 8. |
 | `alt` | Accessible description | 125 characters max. Defaults to the title; hand-written alt text comes later with the sidecar file. |
 | `title` | Placard label above the image, in a header row with the reaction bar | Built from the filename: hyphens become spaces, title case. 80 characters max. Small caps, large and bright. |
 | `reaction_bar` | See section 3 | — |
@@ -71,7 +71,8 @@ When the Worker or Firebase is down, reaction bars simply don't render and no me
 | `title` | Display name | Built from the filename. 80 characters max. |
 | `keywords` | Filename words | Lowercase, stop words removed. |
 | `ocr_text` | Text read from the image | From OCR, or from the poster's correction file when one exists. Plain text, whitespace collapsed. Capped at about 5,000 characters per poster. |
-| `src` | Image variants | Paths for each width, e.g. 800, 1600 and 2400 pixels. |
+| `src` | WebP variants | Paths for each width, e.g. 800, 1600 and 2400 pixels, plus the original width when it's under 2400. |
+| `avif` | AVIF variants | Same widths as `src`; about 45% smaller. Browsers without AVIF use `src`. |
 | `width` / `height` | Original size | Whole numbers, in pixels. |
 | `added_at` | Publish date | ISO 8601, recorded in the manifest at first ingest. Feed shows newest first. |
 

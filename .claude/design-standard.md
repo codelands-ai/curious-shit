@@ -50,7 +50,7 @@ The site is **dark only**. There is no light mode; the hallway is always after h
 
 ## 2. Typography
 
-Three families, all from Google Fonts, loaded with `display=swap` and Latin subset only.
+Three families, self-hosted from `src/fonts/` (Latin subset, as served by Google Fonts; SIL Open Font License), loaded with `font-display: swap`.
 
 | Role | Family | Weights | Where |
 | --- | --- | --- | --- |

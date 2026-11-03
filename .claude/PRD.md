@@ -22,7 +22,7 @@ Curious Shit is a single-curator gallery. Only the owner publishes posters; visi
 ### Must-Have
 
 - **Static gallery on Cloudflare (Workers static assets):** a continuous vertical scroll of full-width landscape posters that lazy-loads the next batch of 8.
-- **Build-time ingest pipeline:** for each new image, reject it with a clear error if its aspect ratio is below 1.2, assign a permanent ID and publish date in a manifest file, extract keywords from the filename, run OCR, generate WebP variants at 2–3 widths, and write everything to a static JSON search index.
+- **Build-time ingest pipeline:** for each new image, reject it with a clear error if its aspect ratio is below 1.2, assign a permanent ID and publish date in a manifest file, extract keywords from the filename, run OCR, generate AVIF and WebP variants at 2–3 widths, and write everything to a static JSON search index.
 - **OCR correction file:** an optional hand-edited plain-text file per poster that replaces its OCR output in the index.
 - **Always-visible search bar:** client-side full-text search over filenames and OCR text, with results filtering the scroll in place.
 - **Firebase Authentication:** visitors sign in with Google or an email magic link to react; browsing and searching need no account.
@@ -88,7 +88,7 @@ The page has six sections, top to bottom, fed by two data records. Only Must-Hav
 
 | Field | Description | Constraints |
 | --- | --- | --- |
-| `image` | The poster | Responsive WebP at 2–3 widths via `srcset`. Width and height set up front so the page doesn't jump. Landscape only (aspect ratio at least 1.2); anything else is rejected at build. Lazy-loaded except the first card. |
+| `image` | The poster | Responsive AVIF (WebP fallback) at 2–3 widths via `<picture>` and `srcset`. Width and height set up front so the page doesn't jump. Landscape only (aspect ratio at least 1.2); anything else is rejected at build. Lazy-loaded except the first card. |
 | `alt` | Accessible description | 125 characters max. Defaults to the title; hand-written alt text comes later with the sidecar file. |
 | `title` | Placard label above the image, in a header row with the reaction bar | Built from the filename: hyphens become spaces, title case. 80 characters max. Small caps, large and bright. |
 | `reaction_bar` | See section 3 | — |
