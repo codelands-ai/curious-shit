@@ -67,6 +67,7 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-03 | Keep the owner's three test votes as the first real votes | Owner's choice |
 | 2026-11-03 | The search input shows only its brass border on focus; every other control keeps the standard focus outline | Resolves the phase 3 double ring |
 | 2026-11-03 | Phase 7 includes the launch polish (accessibility, page basics, CSP, README) | Owner's choice |
+| 2026-11-03 | Hard rule reworded: if the Worker is down, bars are hidden; if Firebase is down, counts still show and sign-in reports an error (CLAUDE.md, PRD, content model) | Owner's choice: counts come from our own Worker, so hiding them when only sign-in is down would remove working information |
 | 2026-11-01 | `.claude/PRD.md` is the only PRD; the claude.ai shared copy is dropped and no longer maintained | The repo file is versioned and read by every session; one copy can't drift |
 
 ## Plan
@@ -297,7 +298,7 @@ curious-shit/
 - Graceful degradation, on the preview, with the same Cloudflare and Firebase setup as live.
   - Worker API down: feed loads and keeps loading as you scroll (9 → 33 cards), search works, all bars hidden.
   - Both down: the same.
-  - Firebase down: feed and search work, counts still show, and sign-in shows a friendly error. See the open question in the phase 7 PR about the rule's wording.
+  - Firebase down: feed and search work, counts still show, and sign-in shows a friendly error, which matches the reworded rule.
 - No public upload path: POST, PUT, DELETE and PATCH on pages and files return 405; unknown API paths 404. The only writes are `PUT`/`DELETE /api/reactions/:poster/:emoji` with no body, behind token verification.
 
 **Launch polish:**
@@ -305,7 +306,7 @@ curious-shit/
   - Fixed: no h1 on phones; `--text-faint` on `--plinth` (4.3:1); `--oxblood` errors (3.5:1, now `#C76852` at 4.6:1).
   - Keyboard: tab order is search, sign-in, then the pills; the dialog keeps focus and returns it to "Sign in to vote" on close.
 - Page basics: SVG favicon and touch icon, meta description, Open Graph and Twitter tags with a 1200×630 share image of the newest poster (made by ingest), canonical URLs, and a 404 page ("Nothing hangs here") with status 404.
-- CSP: `default-src 'self'` plus only Firebase sign-in's origins. No violations across the feed, voting, search, privacy, 404 and the Google popup and frame. The owner confirmed sign-in works under the CSP on the live site (2026-11-03).
+- CSP: `default-src 'self'` plus only Firebase sign-in's origins. No violations across the feed, voting, search, privacy, 404 and the Google popup and frame. The owner confirmed sign-in works under the CSP on the live site (2026-11-03). The owner then confirmed Google sign-in works under the CSP on the preview.
 - README: owner's guide to publishing, corrections, previews, deletion and local dev.
 
 ## Environment
