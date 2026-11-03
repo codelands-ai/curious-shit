@@ -21,7 +21,7 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-01 | Phase 3: MiniSearch search bar with results, clearing, `?q=` links, error line, speed and accuracy checks | PR #6 |
 | 2026-11-01 | Phase 4: Cloudflare config, caching headers, `npm run deploy` / `deploy:preview`, first production deploy, mobile LCP fixes | PR #7 |
 | 2026-11-01 | Phase 5: Firebase sign-in (Google popup, email link), auth control and dialog, privacy page | PR #9 |
-| 2026-11-02 | Phase 6: reactions Worker + D1, reaction bar in a placard panel above each poster, Worker tests, delete-user script | `phase-6-reactions` |
+| 2026-11-02 | Phase 6: reactions Worker + D1, reaction bar in a placard panel above each poster, Worker tests, delete-user script | PR #10 |
 | 2026-11-01 | First poster published with `npm run deploy`: `jacob-esau.webp`, live and searchable in 12s | commit `98a8732` |
 
 ## Decisions
@@ -61,6 +61,11 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-02 | Tapping the signed-out tooltip opens the sign-in dialog | Owner approved (superseded below) |
 | 2026-11-02 | After trying the preview: "Sign in to react" becomes "Sign in to vote" (button and dialog); signed-out taps open sign-in directly, no tooltip; counts always show, including 0; title and reaction bar move above the poster in one row (stacked on phones); title 31px (25px on phones) in bright text; emoji 28px in 48px pills | Owner feedback: "react" reads as the framework, and titles and emoji were too small and easy to miss |
 | 2026-11-02 | Title and emoji sit inside a raised `--plinth` placard panel attached to the top of each poster, with pills on `--wall`; the picture light moves behind the whole exhibit and its edges are masked | Owner feedback: the pills crossed the glow's hard top edge; the panel should act as a divider between posters |
+| 2026-11-03 | The LCP criterion is measured with Lighthouse devtools (applied) throttling, mobile | Stricter than the simulated default; passing it implies passing the other |
+| 2026-11-03 | Self-host the fonts (supersedes "Fonts stay on Google Fonts until phase 7") | Removes a second origin from the critical path, and Google no longer sees visitor IPs |
+| 2026-11-03 | Keep the owner's three test votes as the first real votes | Owner's choice |
+| 2026-11-03 | The search input shows only its brass border on focus; every other control keeps the standard focus outline | Resolves the phase 3 double ring |
+| 2026-11-03 | Phase 7 includes the launch polish (accessibility, page basics, CSP, README) | Owner's choice |
 | 2026-11-01 | `.claude/PRD.md` is the only PRD; the claude.ai shared copy is dropped and no longer maintained | The repo file is versioned and read by every session; one copy can't drift |
 
 ## Plan
@@ -78,7 +83,7 @@ Each phase ends with something that can be seen or tested. Phases and steps are 
 | 4 | First deploy | done | Gallery and search live on Cloudflare (Workers static assets) |
 | 5 | Sign-in | done | Firebase Auth with Google and email magic link |
 | 6 | Reactions | done | Worker + D1 endpoint, reaction bar wired up, rate limiting |
-| 7 | Launch readiness | proposed | Graceful degradation, success criteria checked (privacy page moved to phase 5) |
+| 7 | Launch readiness | in progress | Graceful degradation, success criteria checked (privacy page moved to phase 5) |
 
 Detailed steps for each phase get added below as they're confirmed.
 
@@ -239,6 +244,25 @@ curious-shit/
 - Preview on Cloudflare: the free plan accepted both rate-limit bindings; the production D1 schema was applied; writes without a valid token get 401; the owner voted with Google and email-link accounts and the counts combined (2 distinct voters in production D1).
 - Lighthouse mobile (devtools throttling): CLS 0; LCP 2.75–2.84s against 2.66s in phase 5 (+6.5 KB JS, within noise).
 - Found and fixed: phone pages scrolled 32px sideways because of the picture light (since phase 2).
+
+### Phase 7: Launch readiness (confirmed 2026-11-03)
+
+| # | Step | Detail | Status |
+| --- | --- | --- | --- |
+| 7.1 | Publish in 5 minutes | Re-time a publish with OCR not cached. | confirmed |
+| 7.2 | Search accuracy | `npm run check:search` over `data/search-check.json` (words read off each poster by eye); Jacob and Esau added. | confirmed |
+| 7.3 | Search at 1,000 posters | Index build time on a 4× slowed CPU; pre-build at ingest if too slow. | confirmed |
+| 7.4 | LCP under 2.5s | Devtools throttling. Try AVIF with a WebP fallback, phone-size quality and self-hosted fonts; keep what works. | confirmed |
+| 7.5 | One emoji each | Record the Worker tests as evidence. | confirmed |
+| 7.6 | $0 at scale | Free-plan limits from current docs against estimated use at 1,000 posters and 10,000 visitors a month. | confirmed |
+| 7.7 | Graceful degradation | On the live site, block Firebase, then the API: browsing and search work, bars hidden. | confirmed |
+| 7.8 | No upload path | Audit every write path. | confirmed |
+| 7.9 | Accessibility | Keyboard-only run, axe scan, contrast check. | confirmed |
+| 7.10 | Page basics | Favicon, meta description, Open Graph, 404 page. | confirmed |
+| 7.11 | Security headers | Content-Security-Policy, tested against every sign-in flow. | confirmed |
+| 7.12 | README | Owner's guide to publishing, previews, deletion and local dev. | confirmed |
+
+**Done when:** all six success criteria have recorded evidence, the hard rules pass on the live site, and every open caveat in the tracker is either resolved or explained.
 
 ## Environment
 
