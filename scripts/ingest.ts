@@ -9,17 +9,22 @@ import { basename, extname, join } from "node:path";
 import { promisify } from "node:util";
 import sharp from "sharp";
 import type { FeedPoster, IndexPoster } from "../shared/poster.ts";
+import { buildSearch } from "../shared/search.ts";
 
 const run = promisify(execFile);
 
 const ROOT = new URL("..", import.meta.url).pathname;
 const POSTERS_DIR = join(ROOT, "posters");
 const MANIFEST_PATH = join(ROOT, "data/manifest.json");
-const OCR_CACHE_DIR = join(ROOT, ".cache/ocr");
+// Bump OCR_VERSION when the OCR method changes, so every poster is read again.
+// v2 (phase 7): paragraph mode plus sparse-text mode, which catches map labels and scattered words.
+const OCR_VERSION = "v2";
+const OCR_CACHE_DIR = join(ROOT, ".cache/ocr", OCR_VERSION);
 const GENERATED_DIR = join(ROOT, "public/generated");
 const IMAGES_DIR = join(GENERATED_DIR, "posters");
 const INDEX_PATH = join(GENERATED_DIR, "index.json");
 const FEED_PATH = join(GENERATED_DIR, "feed.json");
+const SEARCH_INDEX_PATH = join(GENERATED_DIR, "search-index.json");
 const IMAGES_URL = "/generated/posters";
 
 const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
@@ -117,6 +122,7 @@ async function main(): Promise<void> {
     ({ id, title, src, avif, width, height, added_at }): FeedPoster => ({ id, title, src, avif, width, height, added_at }),
   );
   const feedChanged = await writeIfChanged(FEED_PATH, json({ posters: feed }));
+  await writeIfChanged(SEARCH_INDEX_PATH, JSON.stringify(buildSearch(records)));
 
   // 1.9 Report.
   const seconds = ((Date.now() - started) / 1000).toFixed(1);
@@ -259,17 +265,35 @@ async function ocrText(s: ScannedFile): Promise<string> {
       .resize({ width: Math.max(s.width, OCR_MIN_WIDTH) })
       .png()
       .toFile(png);
-    const { stdout } = await run("tesseract", [png, "stdout", "-l", "eng"], {
-      maxBuffer: 16 * 1024 * 1024,
-      env: { ...process.env, OMP_THREAD_LIMIT: "1" },
-    });
-    const text = cleanText(stdout);
+    const tesseract = (psm: string) =>
+      run("tesseract", [png, "stdout", "-l", "eng", "--psm", psm], {
+        maxBuffer: 16 * 1024 * 1024,
+        env: { ...process.env, OMP_THREAD_LIMIT: "1" },
+      }).then((r) => r.stdout);
+    // Paragraph mode (3) reads body text in order; sparse mode (11) finds labels on maps and diagrams.
+    const [paragraphs, sparse] = await Promise.all([tesseract("3"), tesseract("11")]);
+    const text = cleanText(mergeOcr(paragraphs, sparse));
     await writeFile(cached, text);
     counts.ocrTesseract++;
     return text;
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+}
+
+/** The paragraph text, followed by any words only sparse mode found (so the 5,000-character cap keeps the prose). */
+function mergeOcr(paragraphs: string, sparse: string): string {
+  const key = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+  const seen = new Set(paragraphs.split(/\s+/).map(key).filter(Boolean));
+  const extra: string[] = [];
+  for (const token of sparse.split(/\s+/)) {
+    const k = key(token);
+    if (k && !seen.has(k)) {
+      seen.add(k);
+      extra.push(token);
+    }
+  }
+  return `${paragraphs} ${extra.join(" ")}`;
 }
 
 function cleanText(raw: string): string {

@@ -19,3 +19,6 @@
 
 /generated/index.json
   Cache-Control: public, max-age=0, must-revalidate
+
+/generated/search-index.json
+  Cache-Control: public, max-age=0, must-revalidate
