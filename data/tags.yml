@@ -1,0 +1,9 @@
+# Topic tags. Posters may only use tags listed here (slug: Display name).
+# The slug appears in URLs (?tag=deep-time); keep it lowercase with hyphens, and don't rename one in use.
+deep-time: Deep time
+earth-science: Earth science
+religion: Religion
+gnosticism: Gnosticism
+cosmology: Cosmology
+bible: Bible
+christianity: Christianity

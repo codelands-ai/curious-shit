@@ -26,6 +26,8 @@ const posters: IndexPoster[] = Array.from({ length: POSTERS }, (_, i) => {
   return {
     id: `poster-${i}`,
     title: titleWords.join(" "),
+    alt: titleWords.join(" "),
+    tags: [],
     keywords: titleWords,
     ocr_text: text.slice(0, CHARS).trim(),
     src: [{ width: 800, url: `/generated/posters/poster-${i}-800.webp` }],

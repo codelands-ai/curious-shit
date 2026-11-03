@@ -1,13 +1,17 @@
 import { existsSync, readFileSync } from "node:fs";
 import { defineConfig, type Plugin } from "vite";
-import { cardHtml, posterPreloadAttrs } from "./shared/card.ts";
-import { FEED_URL, type FeedPoster } from "./shared/poster.ts";
+import { cardHtml, posterPreloadAttrs, topicsHtml } from "./shared/card.ts";
+import { FEED_URL, type FeedFile, type FeedPoster } from "./shared/poster.ts";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "./shared/site.ts";
 
 const FEED_FILE = new URL("./public/generated/feed.json", import.meta.url);
 
+function readFeedFile(): FeedFile {
+  return existsSync(FEED_FILE) ? (JSON.parse(readFileSync(FEED_FILE, "utf8")) as FeedFile) : { posters: [], tags: [] };
+}
+
 function readFeed(): FeedPoster[] {
-  return existsSync(FEED_FILE) ? (JSON.parse(readFileSync(FEED_FILE, "utf8")) as { posters: FeedPoster[] }).posters : [];
+  return readFeedFile().posters;
 }
 
 // The newest poster is the LCP element. Write its card into the HTML so it paints without waiting
@@ -26,7 +30,13 @@ function preloadFirstPoster(): Plugin {
       // A shared ?q= link replaces the feed with results, so the script removes this card there.
       const feedDiv = '<div id="feed" class="feed"></div>';
       if (!html.includes(feedDiv)) throw new Error("preload-first-poster: #feed container not found in index.html");
-      return { html: first ? html.replace(feedDiv, `<div id="feed" class="feed">${cardHtml(first, true)}</div>`) : html, tags };
+      let out = first ? html.replace(feedDiv, `<div id="feed" class="feed">${cardHtml(first, true)}</div>`) : html;
+      // The topic row sits above the first poster, so it's in the HTML from the start (no layout shift).
+      const topicsNav = '<nav id="topics" class="topics" aria-label="Topics"></nav>';
+      if (!out.includes(topicsNav)) throw new Error("preload-first-poster: #topics nav not found in index.html");
+      const topics = topicsHtml(readFeedFile().tags ?? []);
+      out = out.replace(topicsNav, topics ? `<nav id="topics" class="topics" aria-label="Topics">${topics}</nav>` : "");
+      return { html: out, tags };
     },
   };
 }

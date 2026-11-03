@@ -25,6 +25,19 @@ If search misses a word that's on a poster, put the poster's full text in a corr
 
 Add a few words you can read on each new poster to `data/search-check.json`, then run `npm run check:search` to confirm search finds them. The PRD target is at least 90% of posters.
 
+### Titles, alt text and topics
+
+Give a poster a sidecar file next to it, named after the image, `posters/geologic-time-scale.yml`:
+
+```yaml
+title: Geologic Time Scale          # proper title, punctuation allowed (80 max)
+alt: Chart of Earth's history by eon, era and period   # what a screen reader says (125 max)
+tags: [deep-time, earth-science]    # topics, from data/tags.yml
+description: Optional link-preview text for this poster (200 max)
+```
+
+All fields are optional. Tags must be listed in `data/tags.yml` (`slug: Display name`); add new topics there first. A typo fails the publish with a suggestion, and nothing is half-published. Changing a title never changes the poster's link or its reactions. Rename the sidecar along with its poster.
+
 ## Sharing a poster
 
 Every poster has a permanent link, `/p/<id>` (for example `/p/geologic-time-scale`), which opens the gallery at that poster. The link icon after each title shares or copies it. Shared links show the poster's title and image in previews. A removed poster's link shows the 404 page. `sitemap.xml` lists every poster for search engines.

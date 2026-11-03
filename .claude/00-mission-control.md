@@ -24,6 +24,7 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-02 | Phase 6: reactions Worker + D1, reaction bar in a placard panel above each poster, Worker tests, delete-user script | PR #10 |
 | 2026-11-03 | Phase 7: success criteria met with evidence; AVIF, self-hosted fonts, pre-built search index, sparse OCR, accessibility fixes, page basics, CSP, README | PR #11 |
 | 2026-11-03 | Phase 8: permalinks with per-poster preview cards, share button, sitemap | PR #13 |
+| 2026-11-03 | Phase 9: sidecar titles, alt text and tags; topic filter row; tag search | `phase-9-topic-tags` |
 | 2026-11-01 | First poster published with `npm run deploy`: `jacob-esau.webp`, live and searchable in 12s | commit `98a8732` |
 
 ## Decisions
@@ -78,6 +79,7 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-03 | Tags come from a fixed list in `data/tags.yml`; unknown tags fail the publish with a suggestion | Catches typos before they become new tags |
 | 2026-11-03 | Filtering: a tag row under the top bar plus clickable tags on each poster; `?tag=` in the URL, combinable with search | Owner's choice |
 | 2026-11-03 | First titles and tags: Geologic Time Scale (Deep time, Earth science); The Gnostic Cosmos (Religion, Gnosticism, Cosmology); Esau and Jacob (Religion, Bible); Resurrection Overview: Jehovah's Witnesses vs. Seventh-day Adventists (Religion, Christianity) | Owner approved; titles taken from each poster's own heading |
+| 2026-11-03 | IBM Plex Sans also uses `font-display: optional` (not preloaded) | Topic chips wrap by width; a late swap shifted the poster on phones. On a first page view the system sans may show instead, which looks close |
 | 2026-11-01 | `.claude/PRD.md` is the only PRD; the claude.ai shared copy is dropped and no longer maintained | The repo file is versioned and read by every session; one copy can't drift |
 
 ## Plan
@@ -97,7 +99,7 @@ Each phase ends with something that can be seen or tested. Phases and steps are 
 | 6 | Reactions | done | Worker + D1 endpoint, reaction bar wired up, rate limiting |
 | 7 | Launch readiness | done | Graceful degradation, success criteria checked (privacy page moved to phase 5) |
 | 8 | Poster permalinks | done | Every poster has its own link with a real preview card; the gallery opens at that poster |
-| 9 | Topic tags and titles | in progress | Sidecar files give posters proper titles, alt text and tags; visitors filter by tag |
+| 9 | Topic tags and titles | done | Sidecar files give posters proper titles, alt text and tags; visitors filter by tag |
 
 Detailed steps for each phase get added below as they're confirmed.
 
@@ -341,20 +343,31 @@ curious-shit/
 - Lighthouse mobile, devtools throttling: long-title permalink LCP 1.81–1.87s (five runs), CLS 0; home and the Gnostic Cosmology permalink about 1.85–1.97s, CLS 0. Accessibility, Best Practices 100. SEO is 69 on previews only, because Cloudflare sends `x-robots-tag: noindex` there; production sends none.
 - Found and fixed: the title font swapping in late re-wrapped long titles and pushed the poster down (CLS 0.05–0.14). Cormorant SC is now preloaded and uses `font-display: optional`.
 
-### Phase 9: Topic tags and titles (confirmed 2026-11-03)
+### Phase 9: Topic tags and titles (done 2026-11-03)
 
 | # | Step | Detail | Status |
 | --- | --- | --- | --- |
-| 9.1 | Sidecar file | Optional `posters/<name>.yml`: `title` (80 max), `alt` (125 max, defaults to title), `tags`, `description` (link-preview text). Validated by ingest. | confirmed |
-| 9.2 | Tag list | `data/tags.yml`: slug to display name. Unknown tags fail with the closest match suggested. | confirmed |
-| 9.3 | Tags on posters | Small square tags under the title in the placard panel, each a link to its filter. | confirmed |
-| 9.4 | Filter row | All tags with counts under the top bar; filters like search (fade, jump, "N exhibits · Tag", back wall); `?tag=`; combines with search; wraps on phones. | confirmed |
-| 9.5 | Search | Tag names searchable, weighted like keywords. | confirmed |
-| 9.6 | Stable links | Title changes don't touch IDs, permalinks or reactions; permalink pages use the new title and description. | confirmed |
-| 9.7 | First tags and titles | Sidecars for the four posters (see Decisions). | confirmed |
-| 9.8 | Tests and docs | Ingest validation, filter/URL/search behaviour, layout, CLS, accessibility; content model, design standard, README. | confirmed |
+| 9.1 | Sidecar file | Optional `posters/<name>.yml`: `title` (80 max), `alt` (125 max, defaults to title), `tags`, `description` (link-preview text). Validated by ingest. | done |
+| 9.2 | Tag list | `data/tags.yml`: slug to display name. Unknown tags fail with the closest match suggested. | done |
+| 9.3 | Tags on posters | Small square tags under the title in the placard panel, each a link to its filter. | done |
+| 9.4 | Filter row | All tags with counts under the top bar; filters like search (fade, jump, "N exhibits · Tag", back wall); `?tag=`; combines with search; wraps on phones. | done |
+| 9.5 | Search | Tag names searchable, weighted like keywords. | done |
+| 9.6 | Stable links | Title changes don't touch IDs, permalinks or reactions; permalink pages use the new title and description. | done |
+| 9.7 | First tags and titles | Sidecars for the four posters (see Decisions). | done |
+| 9.8 | Tests and docs | Ingest validation, filter/URL/search behaviour, layout, CLS, accessibility; content model, design standard, README. | done |
 
 **Done when:** the four posters show their new titles and tags, filtering by any tag (alone or with search) shows exactly the tagged posters with a shareable URL, and a bad sidecar fails ingest with a clear message.
+
+**Verified 2026-11-03** (preview):
+- Ingest validation: one run reports a 90-character title, an unknown tag "religon" (suggests "religion"), an unknown field, a `.yaml` file and an orphaned sidecar together, and exits before writing anything.
+- Browser, 18/18:
+  - new titles and tags; the filter row with counts; Religion shows exactly its 3 posters, newest first, ending at the back wall;
+  - search inside a tag, and outside it (0 results); Escape keeps the tag; choosing the active topic or "All" clears;
+  - tags on posters filter in place; tag names are searchable; `?tag=` links open filtered;
+  - permalinks show the new titles and the hand-written alt text;
+  - on phones the row wraps with no sideways scroll; axe reports 0 issues with a filter active.
+- Lighthouse mobile, devtools throttling: home, `?tag=religion` and the long-title permalink all have LCP 1.80–1.98s, CLS 0, Accessibility 100. `npm run check:search` 40/40; Worker tests 25/25.
+- Found and fixed: IBM Plex Sans swapping in late re-wrapped the topic chips on phones (CLS 0.037); Plex now uses `font-display: optional` too (no preload, to keep bandwidth for the first poster).
 
 ## Environment
 

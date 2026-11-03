@@ -1,6 +1,11 @@
 // Poster records written by scripts/ingest.ts and read by the frontend.
 // Field definitions: .claude/content-model.md, "Data record: Poster".
 
+export interface Tag {
+  slug: string;
+  name: string;
+}
+
 export interface PosterVariant {
   width: number;
   url: string;
@@ -10,6 +15,12 @@ export interface PosterVariant {
 export interface FeedPoster {
   id: string;
   title: string;
+  /** Screen-reader description of the image (sidecar `alt`, else the title). */
+  alt: string;
+  /** Topic tags, in the order the sidecar lists them. */
+  tags: Tag[];
+  /** Link-preview text for this poster's permalink (sidecar `description`), if any. */
+  description?: string;
   /** WebP at each width: the fallback every browser can show. */
   src: PosterVariant[];
   /** AVIF at the same widths: about 40% smaller, used where the browser supports it. */
@@ -25,6 +36,12 @@ export interface FeedPoster {
 export interface IndexPoster extends FeedPoster {
   keywords: string[];
   ocr_text: string;
+}
+
+/** feed.json: the posters, newest first, and every tag in use with its poster count. */
+export interface FeedFile {
+  posters: FeedPoster[];
+  tags: (Tag & { count: number })[];
 }
 
 export const FEED_URL = "/generated/feed.json";

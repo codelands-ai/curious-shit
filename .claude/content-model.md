@@ -8,17 +8,24 @@ The page has six sections, top to bottom, fed by two data records. Only Must-Hav
 | --- | --- | --- |
 | `site_name` | Wordmark | "Curious Shit". Small caps, text only for v1. |
 | `search_input` | Free-text query box | Up to 100 characters. Results update about 150 ms after typing stops. The query is kept in the URL as `?q=` so searches can be shared. Placeholder in the museum-placard voice, e.g. "Search every word on every wall", 40 characters max. |
-| `result_status` | Count shown while a search is active | Format: "N exhibits" ("1 exhibit"). Hidden when the box is empty. If the search index can't be loaded: "Search is closed for a moment. Shit happens." |
+| `result_status` | Count shown while a search or topic filter is active | Format: "N exhibits" ("1 exhibit"), plus " · <Topic>" when a topic is chosen. Hidden when neither is active. If the search index can't be loaded: "Search is closed for a moment. Shit happens." |
 | `clear_control` | Resets the feed | Icon button with an accessible label. |
 | `auth_control` | Sign-in or account button | Signed out: "Sign in to vote". Signed in: the user's initial on a square fixture, opening a menu with their name or email and "Sign out". |
+
+## 1b. Topic filter row (under the search bar)
+
+| Field | Description | Constraints |
+| --- | --- | --- |
+| `topics` | "All" plus every tag in use, with poster counts | From `feed.json`, in `data/tags.yml` order. Written into the HTML at build time. Choosing one filters the hallway like search does and sets `?tag=<slug>`; choosing it again, or "All", clears it. Combines with search text. Wraps on phones. |
 
 ## 2. Gallery feed (one poster card per image)
 
 | Field | Description | Constraints |
 | --- | --- | --- |
 | `image` | The poster | Responsive AVIF (WebP fallback) at 2–3 widths via `<picture>` and `srcset`. Width and height set up front so the page doesn't jump. Landscape only (aspect ratio at least 1.2); anything else is rejected at build. Lazy-loaded except the first card, in batches of 8. |
-| `alt` | Accessible description | 125 characters max. Defaults to the title; hand-written alt text comes later with the sidecar file. |
+| `alt` | Accessible description | 125 characters max. From the sidecar's `alt`, else the title. |
 | `title` | Placard label above the image, in a header row with the reaction bar | Built from the filename: hyphens become spaces, title case. 80 characters max. Small caps, large and bright. |
+| `tags` | Topic labels under the title | From the sidecar, in its order. Each links to that topic's filter (`?tag=<slug>`). Hidden when a poster has none. |
 | `share_control` | Link icon after the title | Opens the native share sheet on touch devices; elsewhere copies the poster's permalink and shows "Link copied" for 2 seconds. Accessible label "Share <title>". |
 | `reaction_bar` | See section 3 | — |
 
@@ -77,12 +84,26 @@ Static HTML written after the build (`scripts/permalinks.ts`), so link previews 
 
 The site also publishes `sitemap.xml` (home plus every permalink) and `robots.txt`.
 
+## Sidecar file: `posters/<name>.yml` (optional, hand-written)
+
+| Field | Constraints |
+| --- | --- |
+| `title` | Text, 80 characters max. Replaces the filename title. |
+| `alt` | Text, 125 characters max. |
+| `tags` | List of slugs from `data/tags.yml`, e.g. `[religion, bible]`. |
+| `description` | Text, 200 characters max. Link-preview text for the permalink. |
+
+Ingest rejects unknown fields, unknown tags (suggesting the closest), over-long values, `.yaml` spellings and sidecars with no matching image, all before writing anything.
+
 ## Data record: Poster (static JSON index, written at build time)
 
 | Field | Description | Constraints |
 | --- | --- | --- |
 | `id` | Stable key, also used in D1 | URL-safe slug. Assigned once in the manifest at first ingest and never changed, even if the file is renamed. |
-| `title` | Display name | Built from the filename. 80 characters max. |
+| `title` | Display name | From the sidecar's `title` if set (punctuation allowed), else built from the filename. 80 characters max. Changing it never changes `id`. |
+| `alt` | Image description | Sidecar `alt` (125 max), else the title. |
+| `tags` | Topic tags | `{ slug, name }` list from the sidecar; slugs must be in `data/tags.yml`. Searchable. |
+| `description` | Link-preview text | Optional, from the sidecar (200 max); used on the poster's permalink page. |
 | `keywords` | Filename words | Lowercase, stop words removed. |
 | `ocr_text` | Text read from the image | From OCR, or from the poster's correction file when one exists. Plain text, whitespace collapsed. Capped at about 5,000 characters per poster. |
 | `src` | WebP variants | Paths for each width, e.g. 800, 1600 and 2400 pixels, plus the original width when it's under 2400. |

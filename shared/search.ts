@@ -10,13 +10,14 @@ export type PosterSearch = MiniSearch<IndexPoster>;
 
 const OPTIONS: Options<IndexPoster> = {
   idField: "id",
-  fields: ["title", "keywords", "ocr_text"],
+  fields: ["title", "keywords", "tags", "ocr_text"],
   extractField: (doc, field) => {
+    if (field === "tags") return (doc.tags ?? []).map((t) => t.name).join(" ");
     const value = doc[field as keyof IndexPoster];
     return Array.isArray(value) ? value.join(" ") : String(value ?? "");
   },
   searchOptions: {
-    boost: { title: 3, keywords: 2 },
+    boost: { title: 3, keywords: 2, tags: 2 },
     // Every word must match, so extra words narrow the results.
     combineWith: "AND",
     // "geolo" finds "geologic"; very short words match exactly so they don't flood results.
