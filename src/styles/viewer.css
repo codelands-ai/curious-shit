@@ -1,0 +1,138 @@
+/* Full-screen viewer (src/viewer.ts). Design standard: dark, quiet chrome; the poster is the only colour. */
+
+.exhibit__frame {
+  cursor: zoom-in;
+}
+
+.viewer-open {
+  overflow: hidden; /* the hallway behind doesn't scroll */
+}
+
+.viewer {
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--wall-deep); /* solid: the hallway shouldn't show through */
+  color: var(--text-primary);
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity var(--dur-exit) var(--ease-exit);
+}
+
+.viewer[open] {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.viewer.is-open {
+  opacity: 1;
+  transition: opacity var(--dur-base) var(--ease-settle);
+}
+
+.viewer::backdrop {
+  background: transparent;
+}
+
+.viewer__bar,
+.viewer__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--gutter);
+}
+
+.viewer__bar {
+  justify-content: space-between;
+  border-bottom: 1px solid var(--rule);
+}
+
+.viewer__title {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 500 var(--fs-placard-responsive) / 1.15 var(--font-placard);
+  letter-spacing: 0.06em;
+}
+
+.viewer__stage {
+  position: relative;
+  overflow: hidden;
+  touch-action: none; /* we handle pinch and pan */
+  cursor: grab;
+}
+
+.viewer.is-zoomed .viewer__stage:active {
+  cursor: grabbing;
+}
+
+.viewer__image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: none;
+  transform-origin: 0 0;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.viewer__image.is-animating {
+  transition: transform var(--dur-base) var(--ease-settle);
+}
+
+.viewer__controls {
+  justify-content: center;
+  border-top: 1px solid var(--rule);
+}
+
+.viewer__button {
+  display: inline-grid;
+  place-items: center;
+  min-width: calc(var(--space-8) + var(--space-3));
+  height: calc(var(--space-8) + var(--space-3));
+  padding: 0 var(--space-3);
+  background: var(--plinth);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-fixture);
+  font: 500 var(--fs-small) / 1 var(--font-ui);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    color var(--dur-fast) var(--ease-settle),
+    background-color var(--dur-fast) var(--ease-settle);
+}
+
+.viewer__button[hidden] {
+  display: none;
+}
+
+.viewer__close {
+  flex: none;
+}
+
+@media (hover: hover) {
+  .viewer__button:hover {
+    background: var(--plinth-raised);
+    color: var(--text-primary);
+  }
+}
+
+.viewer__level {
+  min-width: calc(var(--space-12) + var(--space-2));
+  text-align: center;
+  font: 500 var(--fs-small) / 1 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .viewer,
+  .viewer.is-open,
+  .viewer__image.is-animating {
+    transition: none;
+  }
+}

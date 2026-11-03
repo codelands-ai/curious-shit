@@ -42,6 +42,10 @@ All fields are optional. Tags must be listed in `data/tags.yml` (`slug: Display 
 
 Every poster has a permanent link, `/p/<id>` (for example `/p/geologic-time-scale`), which opens the gallery at that poster. The link icon after each title shares or copies it. Shared links show the poster's title and image in previews. A removed poster's link shows the 404 page. `sitemap.xml` lists every poster for search engines.
 
+## Reading small print
+
+Tapping a poster opens it full screen. Pinch, scroll or double-tap to zoom, drag to move around, and close with ×, Escape or Back. Zoom stops where more would only blur, at 2 screen pixels per image pixel, so a sharper original zooms further. Originals wider than 2400px get an extra zoom-only image of up to 4096px, which is downloaded only when someone opens the viewer.
+
 ## Trying changes before they go live
 
 ```sh

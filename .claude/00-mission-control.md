@@ -25,6 +25,7 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-03 | Phase 7: success criteria met with evidence; AVIF, self-hosted fonts, pre-built search index, sparse OCR, accessibility fixes, page basics, CSP, README | PR #11 |
 | 2026-11-03 | Phase 8: permalinks with per-poster preview cards, share button, sitemap | PR #13 |
 | 2026-11-03 | Phase 9: sidecar titles, alt text and tags; topic filter row; tag search | PR #14 |
+| 2026-11-03 | Phase 10: full-screen viewer with pinch, wheel, double-tap and keyboard zoom; zoom-only images for large originals. All PRD Should-Haves done | `phase-10-zoom-viewer` |
 | 2026-11-01 | First poster published with `npm run deploy`: `jacob-esau.webp`, live and searchable in 12s | commit `98a8732` |
 
 ## Decisions
@@ -102,7 +103,7 @@ Each phase ends with something that can be seen or tested. Phases and steps are 
 | 7 | Launch readiness | done | Graceful degradation, success criteria checked (privacy page moved to phase 5) |
 | 8 | Poster permalinks | done | Every poster has its own link with a real preview card; the gallery opens at that poster |
 | 9 | Topic tags and titles | done | Sidecar files give posters proper titles, alt text and tags; visitors filter by tag |
-| 10 | Full-screen view with zoom | in progress | Tap a poster to see it full screen; pinch, wheel or double-tap to read small print |
+| 10 | Full-screen view with zoom | done | Tap a poster to see it full screen; pinch, wheel or double-tap to read small print |
 
 Detailed steps for each phase get added below as they're confirmed.
 
@@ -372,20 +373,32 @@ curious-shit/
 - Lighthouse mobile, devtools throttling: home, `?tag=religion` and the long-title permalink all have LCP 1.80–1.98s, CLS 0, Accessibility 100. `npm run check:search` 40/40; Worker tests 25/25.
 - Found and fixed: IBM Plex Sans swapping in late re-wrapped the topic chips on phones (CLS 0.037); Plex now uses `font-display: optional` too (no preload, to keep bandwidth for the first poster).
 
-### Phase 10: Full-screen view with zoom (confirmed 2026-11-03)
+### Phase 10: Full-screen view with zoom (done 2026-11-03)
 
 | # | Step | Detail | Status |
 | --- | --- | --- | --- |
-| 10.1 | Opening | Tap or click a poster (magnifier cursor on desktop); focusable, Enter opens. | confirmed |
-| 10.2 | Viewer | Full-window dark dialog: title, controls (−, level, +, Fit, Close; Full screen on desktop); page scroll locked. | confirmed |
-| 10.3 | Zoom and pan | Pinch and drag; wheel and trackpad toward the cursor; double-tap or double-click toggles fit and 2.5×; keys `+` `−` `0` and arrows. Max 2 screen px per image px; pan clamped to the edges. | confirmed |
-| 10.4 | Sharpness | Loads the sharpest variant; ingest adds a zoom-only size (original width up to 4096px) when the original is wider than 2400px. | confirmed |
-| 10.5 | Closing | Close, Escape, backdrop tap when not zoomed, or Back (opening pushes a history step); focus and scroll restored. | confirmed |
-| 10.6 | First-visit cost | Viewer code loads on first open only. | confirmed |
-| 10.7 | Accessibility and motion | Dialog named after the poster, focus kept inside, alt text, labelled 44px controls; reduced motion snaps. | confirmed |
-| 10.8 | Tests and docs | Open/close four ways, zoom by every input, pan limits, focus/scroll restore, CLS, axe, phone, Lighthouse; content model, design standard, README. | confirmed |
+| 10.1 | Opening | Tap or click a poster (magnifier cursor on desktop); focusable, Enter opens. | done |
+| 10.2 | Viewer | Full-window dark dialog: title, controls (−, level, +, Fit, Close; Full screen on desktop); page scroll locked. | done |
+| 10.3 | Zoom and pan | Pinch and drag; wheel and trackpad toward the cursor; double-tap or double-click toggles fit and 2.5×; keys `+` `−` `0` and arrows. Max 2 screen px per image px; pan clamped to the edges. | done |
+| 10.4 | Sharpness | Loads the sharpest variant; ingest adds a zoom-only size (original width up to 4096px) when the original is wider than 2400px. | done |
+| 10.5 | Closing | Close, Escape, backdrop tap when not zoomed, or Back (opening pushes a history step); focus and scroll restored. | done |
+| 10.6 | First-visit cost | Viewer code loads on first open only. | done |
+| 10.7 | Accessibility and motion | Dialog named after the poster, focus kept inside, alt text, labelled 44px controls; reduced motion snaps. | done |
+| 10.8 | Tests and docs | Open/close four ways, zoom by every input, pan limits, focus/scroll restore, CLS, axe, phone, Lighthouse; content model, design standard, README. | done |
 
 **Done when:** tapping any poster opens it full screen, small print on a sample poster is readable by zooming with touch, mouse and keyboard, every way of closing returns you to the same place, and the first-poster LCP is unchanged.
+
+**Verified 2026-11-03** (preview), browser checks 30/30:
+- Loading: the viewer code isn't fetched before the first tap (2.9 KB gzipped, lazy). Click or Enter opens it at 100% with focus on Close and the title shown; the sharpest image loads (1536px AVIF); a history step is added; the page behind can't scroll.
+- Zoom: + and − (150% and back); wheel zooms toward the cursor and caps at 2 screen px per image px (263% on desktop at DPR 1; on a DPR 3 phone pinch also caps at 263% for that poster); double-click toggles 250% and fit; arrow keys pan; dragging stops at the edges; a backdrop click while zoomed doesn't close.
+- Closing: Escape, Close, backdrop click at fit and Back all close. The scroll position is unchanged (1400 → 1400), focus returns to the poster, and scrolling works again.
+- Phone: no Full screen button; pinch zooms; double-tap returns to fit; Back closes.
+- Reduced motion snaps zoom changes. axe reports 0 issues with the viewer open.
+- Map labels and small print on Esau and Jacob are readable at 263% on a phone.
+- Lighthouse mobile, devtools throttling: home and the long-title permalink have LCP 1.80–1.96s, CLS 0, Accessibility and Best Practices 100.
+- Found and fixed: Chrome fires `dblclick` after a touch double-tap, which zoomed straight back in (now ignored for touch); the browser's focus return on dialog close can scroll the poster into view (scroll is now restored); the 96%-opaque background let page text show through (now solid `--wall-deep`).
+
+All PRD Should-Haves are now done: permalinks with previews (phase 8), topic tags from sidecar files (phase 9), full-screen zoom (phase 10), and search terms in the URL (phase 3).
 
 ## Environment
 
