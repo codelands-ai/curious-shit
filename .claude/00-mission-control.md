@@ -24,7 +24,7 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-02 | Phase 6: reactions Worker + D1, reaction bar in a placard panel above each poster, Worker tests, delete-user script | PR #10 |
 | 2026-11-03 | Phase 7: success criteria met with evidence; AVIF, self-hosted fonts, pre-built search index, sparse OCR, accessibility fixes, page basics, CSP, README | PR #11 |
 | 2026-11-03 | Phase 8: permalinks with per-poster preview cards, share button, sitemap | PR #13 |
-| 2026-11-03 | Phase 9: sidecar titles, alt text and tags; topic filter row; tag search | `phase-9-topic-tags` |
+| 2026-11-03 | Phase 9: sidecar titles, alt text and tags; topic filter row; tag search | PR #14 |
 | 2026-11-01 | First poster published with `npm run deploy`: `jacob-esau.webp`, live and searchable in 12s | commit `98a8732` |
 
 ## Decisions
@@ -80,6 +80,8 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-03 | Filtering: a tag row under the top bar plus clickable tags on each poster; `?tag=` in the URL, combinable with search | Owner's choice |
 | 2026-11-03 | First titles and tags: Geologic Time Scale (Deep time, Earth science); The Gnostic Cosmos (Religion, Gnosticism, Cosmology); Esau and Jacob (Religion, Bible); Resurrection Overview: Jehovah's Witnesses vs. Seventh-day Adventists (Religion, Christianity) | Owner approved; titles taken from each poster's own heading |
 | 2026-11-03 | IBM Plex Sans also uses `font-display: optional` (not preloaded) | Topic chips wrap by width; a late swap shifted the poster on phones. On a first page view the system sans may show instead, which looks close |
+| 2026-11-03 | The viewer opens by tapping the poster (no extra icon); Back closes it; one poster at a time; a Full screen button on desktop | Owner's choice |
+| 2026-11-03 | Own pan/zoom code (pointer events and CSS transforms), loaded on first open | No dependency; keeps up-front JS and LCP unchanged |
 | 2026-11-01 | `.claude/PRD.md` is the only PRD; the claude.ai shared copy is dropped and no longer maintained | The repo file is versioned and read by every session; one copy can't drift |
 
 ## Plan
@@ -100,6 +102,7 @@ Each phase ends with something that can be seen or tested. Phases and steps are 
 | 7 | Launch readiness | done | Graceful degradation, success criteria checked (privacy page moved to phase 5) |
 | 8 | Poster permalinks | done | Every poster has its own link with a real preview card; the gallery opens at that poster |
 | 9 | Topic tags and titles | done | Sidecar files give posters proper titles, alt text and tags; visitors filter by tag |
+| 10 | Full-screen view with zoom | in progress | Tap a poster to see it full screen; pinch, wheel or double-tap to read small print |
 
 Detailed steps for each phase get added below as they're confirmed.
 
@@ -368,6 +371,21 @@ curious-shit/
   - on phones the row wraps with no sideways scroll; axe reports 0 issues with a filter active.
 - Lighthouse mobile, devtools throttling: home, `?tag=religion` and the long-title permalink all have LCP 1.80–1.98s, CLS 0, Accessibility 100. `npm run check:search` 40/40; Worker tests 25/25.
 - Found and fixed: IBM Plex Sans swapping in late re-wrapped the topic chips on phones (CLS 0.037); Plex now uses `font-display: optional` too (no preload, to keep bandwidth for the first poster).
+
+### Phase 10: Full-screen view with zoom (confirmed 2026-11-03)
+
+| # | Step | Detail | Status |
+| --- | --- | --- | --- |
+| 10.1 | Opening | Tap or click a poster (magnifier cursor on desktop); focusable, Enter opens. | confirmed |
+| 10.2 | Viewer | Full-window dark dialog: title, controls (−, level, +, Fit, Close; Full screen on desktop); page scroll locked. | confirmed |
+| 10.3 | Zoom and pan | Pinch and drag; wheel and trackpad toward the cursor; double-tap or double-click toggles fit and 2.5×; keys `+` `−` `0` and arrows. Max 2 screen px per image px; pan clamped to the edges. | confirmed |
+| 10.4 | Sharpness | Loads the sharpest variant; ingest adds a zoom-only size (original width up to 4096px) when the original is wider than 2400px. | confirmed |
+| 10.5 | Closing | Close, Escape, backdrop tap when not zoomed, or Back (opening pushes a history step); focus and scroll restored. | confirmed |
+| 10.6 | First-visit cost | Viewer code loads on first open only. | confirmed |
+| 10.7 | Accessibility and motion | Dialog named after the poster, focus kept inside, alt text, labelled 44px controls; reduced motion snaps. | confirmed |
+| 10.8 | Tests and docs | Open/close four ways, zoom by every input, pan limits, focus/scroll restore, CLS, axe, phone, Lighthouse; content model, design standard, README. | confirmed |
+
+**Done when:** tapping any poster opens it full screen, small print on a sample poster is readable by zooming with touch, mouse and keyboard, every way of closing returns you to the same place, and the first-poster LCP is unchanged.
 
 ## Environment
 
