@@ -2,6 +2,7 @@
 // paints without waiting for JavaScript) and the browser (every other card).
 
 import { POSTER_SIZES, type FeedPoster } from "./poster.ts";
+import { REACTIONS } from "./reactions.ts";
 
 export function cardHtml(poster: FeedPoster, first: boolean): string {
   const variants = [...poster.src].sort((a, b) => a.width - b.width);
@@ -23,10 +24,21 @@ export function cardHtml(poster: FeedPoster, first: boolean): string {
   const classes = first ? "exhibit is-lit is-still" : "exhibit";
   return (
     `<figure class="${classes}" data-poster-id="${escape(poster.id)}">` +
+    `<figcaption class="exhibit__header"><span class="exhibit__title">${escape(poster.title)}</span>${reactionBarHtml()}</figcaption>` +
     `<div class="exhibit__frame"><img ${attrs}></div>` +
-    `<figcaption class="exhibit__title">${escape(poster.title)}</figcaption>` +
     `</figure>`
   );
+}
+
+// The bar is part of the card from the start, invisible until counts load, so it never shifts the layout.
+// src/reactions.ts attaches to it; if the API is down it simply stays invisible.
+function reactionBarHtml(): string {
+  const pills = REACTIONS.map(
+    ({ key, emoji, label }) =>
+      `<button type="button" class="pill" data-key="${key}" aria-pressed="false" aria-label="${escape(label)}">` +
+      `<span class="pill__emoji" aria-hidden="true">${emoji}</span><span class="pill__count" aria-hidden="true">0</span></button>`,
+  ).join("");
+  return `<div class="reactions is-pending" role="group" aria-label="Reactions">${pills}</div>`;
 }
 
 function escape(text: string): string {

@@ -1,0 +1,91 @@
+/* Reaction bar: design standard sections 1 (brass), 3 (pills) and 5 (reaction pill, wink). */
+
+.reactions {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  min-height: var(--pill-height); /* reserved before counts arrive, so nothing shifts */
+  transition: opacity var(--dur-base) var(--ease-settle);
+}
+
+/* Until counts load (or forever, if the API is down) the bar holds its space invisibly. */
+.reactions.is-pending {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--pill-height);
+  padding: 0 var(--space-4) 0 var(--space-3);
+  background: var(--wall); /* set into the --plinth placard panel */
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font: 500 var(--fs-body) / 1 var(--font-ui);
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease-settle),
+    border-color var(--dur-fast) var(--ease-settle),
+    color var(--dur-fast) var(--ease-settle);
+}
+
+/* Phones: same 48px pills and 28px emoji, tighter padding so four fit per row. */
+@media (max-width: 767px) {
+  .pill {
+    gap: var(--space-1);
+    padding: 0 var(--space-3) 0 var(--space-2);
+  }
+}
+
+.pill__emoji {
+  display: inline-block;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-size: var(--fs-emoji);
+  line-height: 1;
+}
+
+@media (hover: hover) {
+  .pill:hover {
+    background: var(--plinth-raised);
+    color: var(--text-primary);
+  }
+}
+
+.pill.is-active {
+  background: var(--brass-wash);
+  border-color: var(--brass-dim);
+  color: var(--brass);
+}
+
+.pill__emoji.is-winking {
+  animation: wink 240ms var(--ease-wink);
+}
+
+.pill__count.is-changing {
+  animation: count-in var(--dur-fast) var(--ease-settle);
+}
+
+@keyframes wink {
+  50% {
+    transform: scale(1.18);
+  }
+}
+
+@keyframes count-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill__emoji.is-winking {
+    animation: none;
+  }
+}

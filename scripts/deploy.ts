@@ -8,6 +8,7 @@
 import { spawn, spawnSync } from "node:child_process";
 
 const PRODUCTION_BRANCH = "main";
+const DATABASE = "curious-shit-reactions";
 // Paths a production deploy may find changed: they're what publishing a poster changes.
 const PUBLISHABLE = (path: string) => path.startsWith("posters/") || path === "data/manifest.json";
 
@@ -25,9 +26,17 @@ function main(): Promise<void> | void {
 
   step("Ingest");
   run("npx", ["tsx", "scripts/ingest.ts"]);
-  step("Type-check and build");
+  step("Type-check, test and build");
   run("npx", ["tsc", "--noEmit"]);
+  run("npx", ["tsc", "--noEmit", "-p", "worker"]);
+  run("npx", ["vitest", "run", "--config", "worker/vitest.config.ts", "--silent"]);
   run("npx", ["vite", "build", "--logLevel", "warn"]);
+
+  if (!preview) {
+    // Previews share the production database, so schema changes are applied only by production deploys.
+    step("Apply database migrations");
+    run("npx", ["wrangler", "d1", "migrations", "apply", DATABASE, "--remote"]);
+  }
 
   step(preview ? `Upload preview of ${branch}` : "Upload to production");
   return upload(preview ? branch : null).then((url) => {

@@ -20,7 +20,8 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-01 | Phase 2: looping gallery feed with batching, entrance motion, picture lights and the feed error line | PR #5 |
 | 2026-11-01 | Phase 3: MiniSearch search bar with results, clearing, `?q=` links, error line, speed and accuracy checks | PR #6 |
 | 2026-11-01 | Phase 4: Cloudflare config, caching headers, `npm run deploy` / `deploy:preview`, first production deploy, mobile LCP fixes | PR #7 |
-| 2026-11-01 | Phase 5: Firebase sign-in (Google popup, email link), auth control and dialog, privacy page | `phase-5-sign-in` |
+| 2026-11-01 | Phase 5: Firebase sign-in (Google popup, email link), auth control and dialog, privacy page | PR #9 |
+| 2026-11-02 | Phase 6: reactions Worker + D1, reaction bar in a placard panel above each poster, Worker tests, delete-user script | `phase-6-reactions` |
 | 2026-11-01 | First poster published with `npm run deploy`: `jacob-esau.webp`, live and searchable in 12s | commit `98a8732` |
 
 ## Decisions
@@ -53,6 +54,13 @@ Specs live in [CLAUDE.md](../CLAUDE.md), [PRD.md](PRD.md), [content-model.md](co
 | 2026-11-01 | Stay on Spark and accept 5 email-link sign-in emails per day; when the cap is hit the dialog says so and suggests Google | Verified on firebase.google.com/docs/auth/limits (updated 2026-10-20): "Email link sign-in emails 5 emails/day" on Spark, 25,000 on Blaze, "Please add a billing instrument to go beyond 5". Signed-in visitors stay signed in, so only new email sign-ins count. Revisit if it bites |
 | 2026-11-01 | The Auth emulator runs through `npx firebase-tools@15.29.0` (`npm run emulators`, `npm run dev:emulator`) | The global `firebase` is the Windows install under WSL and hangs at prompts |
 | 2026-11-01 | Privacy page contact for deletion requests: willt@codelands.ai | Owner's choice |
+| 2026-11-02 | The reactions API runs in the site's own Worker at `/api/*` (`run_worker_first`), same origin as the site | No CORS preflights or second deploy. Static files never invoke the script, so the site stays up if the API fails. Still the only server-side code |
+| 2026-11-02 | D1 keeps a `counts` table updated in the same transaction as `reactions` | Reading counts costs 7 rows per poster regardless of popularity, protecting the free read quota |
+| 2026-11-02 | Add/remove are `PUT`/`DELETE` per poster and emoji, not a toggle | Idempotent, so retries and double taps can't flip state |
+| 2026-11-02 | Rate limits: about 60 changes/min per user, about 300 reads/min per IP, via the Workers rate-limit binding | Owner approved. Cloudflare's docs say the limits are approximate and per location, which is fine for flood protection |
+| 2026-11-02 | Tapping the signed-out tooltip opens the sign-in dialog | Owner approved (superseded below) |
+| 2026-11-02 | After trying the preview: "Sign in to react" becomes "Sign in to vote" (button and dialog); signed-out taps open sign-in directly, no tooltip; counts always show, including 0; title and reaction bar move above the poster in one row (stacked on phones); title 31px (25px on phones) in bright text; emoji 28px in 48px pills | Owner feedback: "react" reads as the framework, and titles and emoji were too small and easy to miss |
+| 2026-11-02 | Title and emoji sit inside a raised `--plinth` placard panel attached to the top of each poster, with pills on `--wall`; the picture light moves behind the whole exhibit and its edges are masked | Owner feedback: the pills crossed the glow's hard top edge; the panel should act as a divider between posters |
 | 2026-11-01 | `.claude/PRD.md` is the only PRD; the claude.ai shared copy is dropped and no longer maintained | The repo file is versioned and read by every session; one copy can't drift |
 
 ## Plan
@@ -69,7 +77,7 @@ Each phase ends with something that can be seen or tested. Phases and steps are 
 | 3 | Search | done | Pinned search bar filtering the feed by filename and OCR text |
 | 4 | First deploy | done | Gallery and search live on Cloudflare (Workers static assets) |
 | 5 | Sign-in | done | Firebase Auth with Google and email magic link |
-| 6 | Reactions | proposed | Worker + D1 endpoint, reaction bar wired up, rate limiting |
+| 6 | Reactions | done | Worker + D1 endpoint, reaction bar wired up, rate limiting |
 | 7 | Launch readiness | proposed | Graceful degradation, success criteria checked (privacy page moved to phase 5) |
 
 Detailed steps for each phase get added below as they're confirmed.
@@ -208,6 +216,30 @@ curious-shit/
 - First-visit cost: up-front JS 4.7 KB gzipped (was 3.2 KB); Firebase is a separate 31 KB chunk not requested on first visit.
 - Lighthouse mobile, devtools (real) throttling, five runs each: preview median 2.66s vs production (phase 4 code) 2.69s, so no regression.
 
+### Phase 6: Reactions (done 2026-11-02)
+
+| # | Step | Detail | Status |
+| --- | --- | --- | --- |
+| 6.1 | Database | D1 `curious-shit-reactions`: `reactions` (unique on poster, emoji, uid) and `counts`, changed together in one batch. Migrations in `worker/migrations/`. | done |
+| 6.2 | Worker API | `GET /api/reactions?ids=` (up to 8; plus the caller's own reactions with a token); `PUT`/`DELETE /api/reactions/:poster/:emoji`. Poster IDs checked against `feed.json`, emoji against `shared/reactions.ts`. | done |
+| 6.3 | Token check | Firebase ID token verified with `jose` against Google's keys: signature, audience, issuer, expiry. Only `uid` is used. | done |
+| 6.4 | Rate limiting | Rate-limit binding: writes per uid, reads per IP; 429 rolls the bar back quietly. | done |
+| 6.5 | Tests | `npm test`: Worker tests on `@cloudflare/vitest-pool-workers` with local D1. One-of-each-emoji rule, idempotency, removal, auth failures, validation, counts, rate limits. | done |
+| 6.6 | Reaction bar | Seven pills per card to the design standard; optimistic updates with rollback; duplicate cards stay in sync. | done |
+| 6.7 | Loading counts | One request per batch of 8 after render; reserved space so nothing shifts; failure keeps bars invisible. | done |
+| 6.8 | Signed out | Counts visible to everyone; tapping a pill opens the sign-in dialog (changed from a tooltip after the owner tried the preview). | done |
+| 6.9 | Deletion | `npm run delete-user -- <uid>` removes a user's reactions and fixes counts. | done |
+| 6.10 | Local dev | Local Worker and D1 behind `/api`; emulator tokens accepted only with an explicit dev-only setting. | done |
+
+**Done when:** Worker tests pass; the owner can react, un-react and see counts on the live site; two accounts show combined counts; with the Worker unreachable, browsing and search work and bars are absent.
+
+**Verified 2026-11-02:**
+- Worker tests (`npm test`), 25/25 on a local D1 with real RS256 tokens. One reaction per user per emoji per poster, including 10 concurrent identical adds; the database's own unique constraint; idempotent add and remove; counts never negative; user deletion fixes counts; bad, expired, foreign-key, wrong-audience, wrong-issuer and unsigned tokens rejected; unknown posters and emoji rejected; both rate limits; emulator tokens accepted only on localhost with the dev flag. Deliberately breaking the count trigger fails 3 tests. `npm run deploy` runs these and refuses to upload on failure.
+- Browser end to end (local Worker, D1 and Auth emulator), 23/23: bars on every card, including the pre-rendered one; "Sign in to vote"; zero counts shown; signed-out tap opens sign-in; optimistic taps; three rapid taps match the server; repeats of a poster in the loop stay in sync; two users combine; un-react; sign-out clears highlights; failed writes roll back; Worker down hides bars with no layout shift and search still works; search results have bars; phone layout stacked, with pills in two rows.
+- Preview on Cloudflare: the free plan accepted both rate-limit bindings; the production D1 schema was applied; writes without a valid token get 401; the owner voted with Google and email-link accounts and the counts combined (2 distinct voters in production D1).
+- Lighthouse mobile (devtools throttling): CLS 0; LCP 2.75–2.84s against 2.66s in phase 5 (+6.5 KB JS, within noise).
+- Found and fixed: phone pages scrolled 32px sideways because of the picture light (since phase 2).
+
 ## Environment
 
 Checked 2026-11-01 on the owner's machine (WSL2, Linux):
@@ -242,7 +274,10 @@ Checked 2026-11-01 on the owner's machine (WSL2, Linux):
 - **LCP under real throttling misses the target.** Lighthouse's default simulated throttling gives about 1.6s, but devtools (applied) throttling gives a median of about 2.7s for both phase 4 and phase 5. The 141 KB first poster takes about 2s to download on throttled 4G. Phase 7 should decide which measurement counts and, if needed, add a smaller phone-sized image (lower WebP quality or a ~640px variant).
 - Firebase Spark allows 5 email-link sign-in emails a day (see Decisions). Testing email sign-in uses that quota.
 - Every preview branch needs its own Firebase authorized domain (`<branch>-curious-shit.smokeraven667.workers.dev`) for sign-in to work there.
-- On phones, "Sign in to react" shortens the search placeholder to "Search every word…".
+- On phones, "Sign in to vote" shortens the search placeholder to "Search every word…".
+- Preview deploys use the production D1 database, so votes cast on a preview are real. Schema migrations are applied only by production deploys.
+- Rate limits are approximate and counted per Cloudflare location (Cloudflare's docs); fine for flood protection, not exact quotas.
+- Reads are rate-limited by IP address, which Cloudflare's docs advise against for stable keys; there's no better key for signed-out visitors.
 - Fonts load from Google Fonts at runtime, so the page needs network access to show the right typefaces.
 - Cloudflare and Firebase accounts and projects have to be created by the owner; Claude can't sign up for them. Deferred to phase 4 (Cloudflare) and phase 5 (Firebase), when they're first needed.
 - Generated images aren't committed, so a fresh clone must run `npm run ingest` before `npm run dev` shows posters.

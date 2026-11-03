@@ -46,6 +46,8 @@ export default defineConfig({
   root: "src",
   publicDir: "../public",
   plugins: [preloadFirstPoster()],
+  // `npm run dev:api` serves the reactions Worker and a local D1 on 8787.
+  server: { proxy: { "/api": "http://127.0.0.1:8787" } },
   build: {
     outDir: "../dist",
     emptyOutDir: true,

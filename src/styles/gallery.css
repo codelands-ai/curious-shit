@@ -10,13 +10,15 @@
   --strip-height: var(--space-16);
   --first-exhibit-gap: var(--space-8);
   --placard-gap: var(--space-3);
-  --fs-placard-responsive: var(--fs-body);
+  --gutter-inner: var(--space-4);
+  --fs-placard-responsive: var(--fs-h3);
 }
 
 @media (min-width: 768px) {
   :root {
     --first-exhibit-gap: var(--space-12);
     --placard-gap: var(--space-4);
+    --gutter-inner: var(--space-6);
     --fs-placard-responsive: var(--fs-placard);
   }
 }
@@ -149,6 +151,9 @@
 /* ---------- Feed ---------- */
 
 .hallway {
+  /* The picture light extends 48px past each poster, wider than the 16px phone gutter; clip it at the
+     screen edge so the page never scrolls sideways. (clip, not hidden: no scroll container.) */
+  overflow-x: clip;
   padding: var(--first-exhibit-gap) var(--gutter) var(--exhibit-gap);
   transition: opacity var(--dur-base) var(--ease-settle);
 }
@@ -189,16 +194,14 @@
 /* ---------- Poster card ---------- */
 
 .exhibit {
+  position: relative;
+  isolation: isolate;
   margin: 0;
 }
 
-.exhibit__frame {
-  position: relative;
-  isolation: isolate;
-}
-
-/* 4.3 Picture light: behind the image, 48px past its top, left and right. */
-.exhibit__frame::before {
+/* 4.3 Picture light: behind the whole exhibit (placard panel and poster), 48px past its top, left and right.
+   The mask fades its outer 48px so the light has no visible edge. */
+.exhibit::before {
   content: "";
   position: absolute;
   inset: calc(-1 * var(--space-12)) calc(-1 * var(--space-12)) 0;
@@ -206,6 +209,10 @@
   pointer-events: none;
   --glow: var(--spot);
   background: radial-gradient(ellipse 70% 60% at 50% 0%, var(--glow), transparent 70%);
+  mask-image:
+    linear-gradient(to bottom, transparent, #000 var(--space-12)),
+    linear-gradient(to right, transparent, #000 var(--space-12), #000 calc(100% - var(--space-12)), transparent);
+  mask-composite: intersect;
   opacity: 0;
   transition:
     opacity var(--dur-lights) var(--ease-settle) 100ms,
@@ -227,35 +234,54 @@
     transform var(--dur-slow) var(--ease-settle);
 }
 
+.exhibit.is-lit .exhibit__header,
 .exhibit.is-lit .exhibit__image {
   opacity: 1;
   transform: none;
 }
 
-.exhibit.is-lit .exhibit__frame::before {
+.exhibit.is-lit::before {
   opacity: 1;
 }
 
 /* The first poster and search results appear without the entrance animation. */
+.exhibit.is-still .exhibit__header,
 .exhibit.is-still .exhibit__image,
-.exhibit.is-still .exhibit__frame::before {
+.exhibit.is-still::before {
   transition: none;
 }
 
 @media (hover: hover) {
-  .exhibit:hover .exhibit__frame::before {
+  .exhibit:hover::before {
     --glow: var(--spot-hover);
   }
 }
 
+/* Placard panel: title and reaction bar on a raised strip attached to the top of the poster.
+   One row on wide screens, stacked on phones. It moves with the poster on entrance. */
+.exhibit__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-6);
+  padding: var(--placard-gap) var(--gutter-inner);
+  background: var(--plinth);
+  border-top: 1px solid var(--rule);
+  opacity: 0;
+  transform: translateY(var(--space-4));
+  transition:
+    opacity var(--dur-slow) var(--ease-settle),
+    transform var(--dur-slow) var(--ease-settle);
+}
+
 .exhibit__title {
-  margin-top: var(--placard-gap);
   font-family: var(--font-placard);
   font-weight: 500;
   font-size: var(--fs-placard-responsive);
-  line-height: 1.3;
-  letter-spacing: 0.08em;
-  color: var(--text-secondary);
+  line-height: 1.15;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
 }
 
 /* ---------- Feed status ---------- */
@@ -296,8 +322,9 @@
 /* ---------- Reduced motion: opacity only, no entrance ---------- */
 
 @media (prefers-reduced-motion: reduce) {
+  .exhibit__header,
   .exhibit__image,
-  .exhibit__frame::before {
+  .exhibit::before {
     opacity: 1;
     transform: none;
     transition: none;

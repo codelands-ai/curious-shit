@@ -8,7 +8,7 @@ const SIGNED_IN_FLAG = "cs.signedIn"; // "1" while signed in, so we know to load
 
 type Panel = "choose" | "sent" | "confirm";
 const HEADINGS: Record<Panel, string> = {
-  choose: "Sign in to react",
+  choose: "Sign in to vote",
   sent: "Check your email",
   confirm: "Confirm your email",
 };
@@ -17,6 +17,12 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 
 let loading: Promise<AuthApi | null> | null = null;
 let load: () => Promise<AuthApi | null> = () => Promise.resolve(null); // replaced by startAccount()
+let openDialogRef: (() => void) | null = null;
+
+/** Open the sign-in dialog (used by the reaction bar's signed-out prompt). */
+export function openSignIn(): void {
+  openDialogRef?.();
+}
 let current: Viewer | null = null;
 const listeners = new Set<(viewer: Viewer | null) => void>();
 
@@ -158,6 +164,7 @@ export function startAccount(): void {
     else window.setTimeout(finish, parseFloat(getComputedStyle(ui.dialog).transitionDuration) * 1000 || 0);
   };
 
+  openDialogRef = () => openDialog();
   ui.signIn.addEventListener("pointerenter", () => void load(), { once: true });
   ui.signIn.addEventListener("focus", () => void load(), { once: true });
   ui.signIn.addEventListener("click", () => openDialog());
